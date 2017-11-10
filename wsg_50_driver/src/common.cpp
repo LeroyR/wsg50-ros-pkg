@@ -6,16 +6,16 @@
  *  @section common.c_general General file information
  *
  *  @brief
- *  
+ *
  *
  *  @author wolfer
  *  @date	19.07.2011
- *  
- *  
+ *
+ *
  *  @section common.c_copyright Copyright
- *  
+ *
  *  Copyright 2011 Weiss Robotics, D-71636 Ludwigsburg, Germany
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *
@@ -24,7 +24,7 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the and Weiss Robotics GmbH nor the names of its 
+ *     * Neither the name of the and Weiss Robotics GmbH nor the names of its
  *       contributors may be used to endorse or promote products derived from
  *	 this software without specific prior written permission.
  *
@@ -118,6 +118,22 @@ ip_addr_t str_to_ipaddr( const char *str )
  * @return Status string
  */
 
+const char * grip_status_to_str( gripstatus_t status )
+{
+	switch( status )
+	{
+		case IDLE :                 return( "IDLE" );// No error
+		case GRASPING:              return( "GRASPING" );// attemt to grasp
+		case NO_PART_FOUND:         return( "NO_PART_FOUND" );// grip failed
+		case PART_LOST:             return( "PART_LOST" );// Grip failed during holding
+		case HOLDING:               return( "HOLDING" );// successfull grip. grip force is on
+		case RELEASING:             return( "RELEASING" );// Gripper moves to release position
+		case POSITIONING:           return( "POSITIONING" );
+		case ERROR:                  return( "ERROR" );
+		default:					 return( "Internal error. Unknown error code." );
+	}
+}
+
 const char * status_to_str( status_t status )
 {
 	switch( status )
@@ -174,14 +190,14 @@ void quit( const char *reason )
 const char * getStateValues( unsigned char *b ){
 
 	/*
-	unsigned char aux[4]; 
+	unsigned char aux[4];
 
-	
+
 	aux[0] = b[0];
 	aux[1] = b[1];
 	aux[2] = b[2];
 	aux[3] = b[3];
-	
+
 	dbgPrint("Dins de getStateValues.\n");
 	dbgPrint("b[2] = 0x%x\n", b[2]);
 	dbgPrint("b[3] = 0x%x\n", b[3]);
@@ -246,12 +262,12 @@ const char * getStateValues( unsigned char *b ){
 		//dbgPrint("Temperature Warning.\n");
 		char aux13[23] = " Temperature Warning |";
 		strcat(resp,aux13);
-	}	
+	}
 	if (b[3] & 0x40){ // D14
 		//dbgPrint("Temperature Error.\n");
 		char aux14[21]= " Temperature Error |";
 		strcat(resp, aux14);
-	}	
+	}
 	if (b[3] & 0x80){ // D15
 		//dbgPrint("Power Error.\n");
 		char aux15[15]= " Power Error |";
@@ -285,7 +301,7 @@ const char * getStateValues( unsigned char *b ){
 	}
 
 	// [D21 - D31] RESERVED
-	
+
 	// D31 ==> MSB
 
 	//dbgPrint("%s\n", resp);

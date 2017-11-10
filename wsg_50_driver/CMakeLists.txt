@@ -5,10 +5,14 @@ project(wsg_50_driver)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  actionlib
+  actionlib_msgs
+  control_msgs
   roscpp
   std_msgs
   std_srvs
   wsg_50_common
+  urdf
 )
 
 catkin_package(
@@ -23,12 +27,14 @@ catkin_package(
 
 
 # WSG_50_TCP version
-set(DRIVER_SOURCES 
+set(DRIVER_SOURCES
   src/checksum.cpp include/wsg_50/checksum.h
   src/cmd.c include/wsg_50/cmd.h
   src/common.cpp include/wsg_50/common.h
   src/functions.cpp include/wsg_50/functions.h
   src/interface.cpp include/wsg_50/interface.h
+  src/gripper_monitor.cpp include/wsg_50/gripper_monitor.h
+  src/gripper_command_action.cpp include/wsg_50/gripper_command_action.h
   src/main.cpp
   src/msg.c include/wsg_50/msg.h
   src/serial.c include/wsg_50/serial.h

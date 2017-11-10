@@ -6,18 +6,18 @@
  *  @section common.h_general General file information
  *
  *  @brief
- *  
+ *
  *
  *  @author wolfer
  *  @date	07.07.2011
- *  
- *  
+ *
+ *
  *  @section common.h_copyright Copyright
- *  
+ *
  *  Copyright 2011 Weiss Robotics, D-71636 Ludwigsburg, Germany
- *  
- *  The distribution of this code and excerpts thereof, neither in 
- *  source nor in any binary form, is prohibited, except you have our 
+ *
+ *  The distribution of this code and excerpts thereof, neither in
+ *  source nor in any binary form, is prohibited, except you have our
  *  explicit and written permission to do so.
  *
  */
@@ -131,6 +131,16 @@ typedef enum {
     E_FILE_EXISTS				// File already exists
 } status_t;
 
+typedef enum {
+    IDLE = 0,              // No error
+    GRASPING,              // attemt to grasp
+    NO_PART_FOUND,         // grip failed
+    PART_LOST,             // Grip failed during holding
+    HOLDING,               // successfull grip. grip force is on
+    RELEASING,             // Gripper moves to release position
+    POSITIONING,           // Gripper is moving
+    ERROR                  // error
+} gripstatus_t;
 
 // IP address type
 typedef unsigned int ip_addr_t;
@@ -150,7 +160,8 @@ typedef enum
 	DSACON32,
 	WSG50,
 	WSG32,
-	KMS40
+	KMS40,
+	WSG25
 } device_t;
 
 
@@ -159,6 +170,7 @@ typedef enum
 //------------------------------------------------------------------------
 
 ip_addr_t str_to_ipaddr( const char *str );
+const char * grip_status_to_str( gripstatus_t status );
 const char * status_to_str( status_t status );
 void quit( const char *reason );
 const char * getStateValues( unsigned char * b);

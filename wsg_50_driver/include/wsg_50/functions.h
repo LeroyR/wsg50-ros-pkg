@@ -6,18 +6,18 @@
  *  @section testing.h_general General file information
  *
  *  @brief
- *  
+ *
  *
  *  @author wolfer
  *  @date	30.04.2012
- *  
- *  
+ *
+ *
  *  @section testing.h_copyright Copyright
- *  
+ *
  *  Copyright 2012 Weiss Robotics, D-71636 Ludwigsburg, Germany
- *  
- *  The distribution of this code and excerpts thereof, neither in 
- *  source nor in any binary form, is prohibited, except you have our 
+ *
+ *  The distribution of this code and excerpts thereof, neither in
+ *  source nor in any binary form, is prohibited, except you have our
  *  explicit and written permission to do so.
  *
  */
@@ -28,7 +28,6 @@
 #define FUNCTIONS_H_
 
  #include <string>
-
 //------------------------------------------------------------------------
 // Includes
 //------------------------------------------------------------------------
@@ -66,18 +65,18 @@ typedef struct {
 //------------------------------------------------------------------------
 
 float convert(unsigned char *b);
-int homing( void );
+int homing( bool ignore_response = false );
 int move(float width, float speed, bool stop_on_block, bool ignore_response = false);
 int stop( bool ignore_response = false );
-int grasp( float objWidth, float speed );
-int release( float width, float speed );
-int ack_fault( void );
+int grasp( float objWidth, float speed, bool ignore_response = false);
+int release( float width, float speed, bool ignore_response = false);
+int ack_fault(bool ignore_response);
 
 int setAcceleration( float acc );
 int setGraspingForceLimit( float force );
 
 const char * systemState( void );
-int graspingState( void );
+gripstatus_t graspingState(int auto_update = 0);
 float getOpening(int auto_update = 0);
 float getForce(int auto_update = 0);
 float getSpeed(int auto_update = 0);
