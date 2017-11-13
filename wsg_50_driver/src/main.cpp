@@ -736,6 +736,32 @@ void sigint_handler(int sig)
     ros::shutdown();
 }
 
+std::string get_name(XmlRpc::XmlRpcValue controller_list)
+{
+    if (controller_list.getType() == XmlRpc::XmlRpcValue::TypeArray)
+    {
+        std::cout << controller_list << std::endl;
+        for (int32_t j = 0; j < controller_list.size(); ++j)
+        {
+            std::cout << controller_list[j] << std::endl;
+
+            if (controller_list[j].size() == 4)
+            {
+                if (controller_list[j]["name"].getType() == XmlRpc::XmlRpcValue::TypeString && controller_list[j]["type"].getType() == XmlRpc::XmlRpcValue::TypeString)
+                {
+                    std::string name = static_cast<std::string>(controller_list[j]["name"]);
+                    std::string action_ns = static_cast<std::string>(controller_list[j]["action_ns"]);
+                    std::string type = static_cast<std::string>(controller_list[j]["type"]);
+                    std::cout << "Name : " << name << " -> " << type << std::endl;
+                    if (type == "WeissGripperCmd")
+                        return name;
+                }
+            }
+        }
+    }
+    return std::string("");
+}
+
 /**
  * The main function
  */
@@ -762,7 +788,9 @@ int main(int argc, char **argv)
     nh.param("rate", rate, 10.0); // With custom script, up to 30Hz are possible
     nh.param("grasping_force", grasping_force, 0.0);
     nh.param("prefix", prefix, std::string(""));
-
+    XmlRpc::XmlRpcValue tmp_list;
+    nh.getParam("controller_list", tmp_list);
+    std::string controller_name = get_name(tmp_list);
     if (protocol == "udp")
         use_udp = true;
     else
@@ -776,8 +804,8 @@ int main(int argc, char **argv)
         com_mode = "polling";
         g_mode_polling = true;
     }
-    special_action_client_ptr.reset(new SpecializedGripperActionController("gripper_controller"));
-    action_client_ptr.reset(new GripperActionController("gripper_cmd"));
+    special_action_client_ptr.reset(new SpecializedGripperActionController(controller_name + "/gripper_controller"));
+    action_client_ptr.reset(new GripperActionController(controller_name + "/gripper_cmd"));
 
     ROS_INFO("Connecting to %s:%d (%s); communication mode: %s ...", ip.c_str(), port, protocol.c_str(), com_mode.c_str());
 
@@ -798,17 +826,17 @@ int main(int argc, char **argv)
         if (g_mode_script || g_mode_polling)
         {
 
-            incrementSS = nh.advertiseService("move_incrementally", incrementSrv);
+            incrementSS = nh.advertiseService(controller_name +  "/move_incrementally", incrementSrv);
 
-            setAccSS = nh.advertiseService("set_acceleration", setAccSrv);
+            setAccSS = nh.advertiseService(controller_name +  "/set_acceleration", setAccSrv);
             setForceSS = nh.advertiseService("set_force", setForceSrv);
         }
-        moveSS = nh.advertiseService("move", moveSrv);
-        graspSS = nh.advertiseService("grasp", graspSrv);
-        releaseSS = nh.advertiseService("release", releaseSrv);
-        homingSS = nh.advertiseService("homing", homingSrv);
-        stopSS = nh.advertiseService("stop", stopSrv);
-        ackSS = nh.advertiseService("ack", ackSrv);
+        moveSS = nh.advertiseService(controller_name +  "/move", moveSrv);
+        graspSS = nh.advertiseService(controller_name +  "/grasp", graspSrv);
+        releaseSS = nh.advertiseService(controller_name +  "/release", releaseSrv);
+        homingSS = nh.advertiseService(controller_name +  "/homing", homingSrv);
+        stopSS = nh.advertiseService(controller_name +  "/stop", stopSrv);
+        ackSS = nh.advertiseService(controller_name +  "/ack", ackSrv);
 
         // Subscriber
         ros::Subscriber sub_command, sub_position, sub_speed;
