@@ -219,14 +219,14 @@ int Gripper_Monitor::update()
     { //RELEASE
         if (status == E_SUCCESS)
         {
-            ROS_INFO("Command GRASP successful\n");
+            ROS_INFO("Command RELEASE successful\n");
             this->active_release = false;
         }else if(status == E_CMD_PENDING){
-            ROS_INFO("Command GRASP PENDING\n");
+            ROS_INFO("Command RELEASE PENDING\n");
             this->active_release = true;
         }else{
             this->active_release = false;
-            ROS_ERROR("Command GRASP not successful\n");
+            ROS_ERROR("Command RELEASE not successful\n");
             return -1;
         }
         break;

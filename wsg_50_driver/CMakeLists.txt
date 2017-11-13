@@ -12,6 +12,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   std_srvs
   wsg_50_common
+  xamla_sysmon_watch
+  xamla_sysmon_msgs
   urdf
 )
 
@@ -35,6 +37,7 @@ set(DRIVER_SOURCES
   src/interface.cpp include/wsg_50/interface.h
   src/gripper_monitor.cpp include/wsg_50/gripper_monitor.h
   src/gripper_command_action.cpp include/wsg_50/gripper_command_action.h
+  src/specialized_gripper_command_action.cpp include/wsg_50/specialized_gripper_command_action.h
   src/main.cpp
   src/msg.c include/wsg_50/msg.h
   src/serial.c include/wsg_50/serial.h

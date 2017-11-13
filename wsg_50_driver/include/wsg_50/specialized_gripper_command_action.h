@@ -1,5 +1,5 @@
-#ifndef GRIPPER_ACTION_WSG_H
-#define GRIPPER_ACTION_WSG_H
+#ifndef SPECIALIZED_GRIPPER_ACTION_WSG_H
+#define SPECIALIZED_GRIPPER_ACTION_WSG_H
 
 // C++ standard
 #include <cassert>
@@ -18,27 +18,27 @@
 #include <urdf/model.h>
 
 // ROS messages
-#include <control_msgs/GripperCommandAction.h>
+#include <wsg_50_common/WeissGripperCmdAction.h>
 
 // actionlib
 #include <actionlib/server/action_server.h>
 
 #include "wsg_50_common/Status.h"
-#include "wsg_50_common/Cmd.h"
+#include "wsg_50_common/StateCmd.h"
 
 namespace gripper_command_action
 {
-class GripperActionController
+class SpecializedGripperActionController
 {
   public:
-    typedef boost::shared_ptr<GripperActionController> Ptr;
+    typedef boost::shared_ptr<SpecializedGripperActionController> Ptr;
     struct Commands
     {
         double position_;   // Last commanded position
         double max_effort_; // Max allowed effort
     };
 
-    GripperActionController(std::string action_name = "gripper_controller");
+    SpecializedGripperActionController(std::string action_name = "spezialized_gripper_controller");
 
     void run()
     {
@@ -47,15 +47,15 @@ class GripperActionController
 
     bool init(ros::NodeHandle &root_nh, ros::NodeHandle &controller_nh);
     /*\}*/
+    std::string getTopic();
 
     void update(const ros::Time &time, const ros::Duration &period);
-    std::string getTopic();
     /*\}*/
 
     Commands command_struct_; // pre-allocated memory
 
   private:
-    typedef actionlib::ActionServer<control_msgs::GripperCommandAction> ActionServer;
+    typedef actionlib::ActionServer<wsg_50_common::WeissGripperCmdAction> ActionServer;
     typedef boost::shared_ptr<ActionServer> ActionServerPtr;
     typedef ActionServer::GoalHandle GoalHandle;
 
@@ -66,7 +66,7 @@ class GripperActionController
     std::string joint_name_;
     std::string action_name_;
 
-    control_msgs::GripperCommandResultPtr pre_alloc_result_;
+    wsg_50_common::WeissGripperCmdResultPtr pre_alloc_result_;
 
     ros::Duration action_monitor_period_;
 
@@ -75,8 +75,6 @@ class GripperActionController
     ActionServerPtr action_server_;
     GoalHandle active_goal_;
     bool has_active_goal_ = false;
-
-
 
     // WSG APi
     ros::Subscriber sub_gripper_state_;

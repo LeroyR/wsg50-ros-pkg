@@ -1,10 +1,15 @@
 <?xml version="1.0"?>
 <launch>
-
-  <node name="wsg_50_driver"  pkg="wsg_50_driver" type="wsg_50_ip">
-	<param name="ip" type="string" value="192.168.1.20"/>
-	<param name="port" type="int" value="1000"/>
+  <arg name="prefix" default="wsg50"/>
+  <group ns="xamla">
+  <node name="wsg_25_driver" launch-prefix="gdbserver localhost:4444" pkg="wsg_50_driver" type="wsg_50_ip">
+		<param name="ip" type="string" value="192.168.50.33"/>
+		<param name="port" type="int" value="1000"/>
+		<param name="prefix" type="string" value="$(arg prefix)"/>
+		<param name="rate" type="int" value="20"/>
+        <param name="joint" type="string" value="$(arg prefix)_base_joint_gripper_right"/>
   </node>
-
+  </group>
+<!--launch-prefix="gdbserver localhost:4444"-->
 </launch>
 

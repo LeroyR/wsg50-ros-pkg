@@ -43,11 +43,14 @@
 #include <mutex>
 #include <thread>
 #include <chrono>
+#include <xamla_sysmon_msgs/statuscodes.h>
+#include <xamla_sysmon_msgs/HeartBeat.h>
 
 #include "wsg_50/common.h"
 #include "wsg_50/cmd.h"
 #include "wsg_50/msg.h"
 #include "wsg_50/functions.h"
+#include "wsg_50/specialized_gripper_command_action.h"
 #include "wsg_50/gripper_command_action.h"
 #include "wsg_50/gripper_monitor.h"
 
@@ -59,6 +62,8 @@
 #include "wsg_50_common/Conf.h"
 #include "wsg_50_common/Incr.h"
 #include "wsg_50_common/Cmd.h"
+#include "wsg_50_common/StateCmd.h"
+#include "wsg_50_common/ServerConfiguration.h"
 
 #include "sensor_msgs/JointState.h"
 #include "std_msgs/Float32.h"
@@ -78,20 +83,23 @@ using namespace gripper_command_action;
 //------------------------------------------------------------------------
 // Global variables
 //------------------------------------------------------------------------
+//typedef boost::shared_ptr<XamlaSysmonWatch> XamlaSysmonWatchPtr;
 std::string prefix;
 std::string lastState;
 float increment;
 bool objectGraspped;
 
 int g_timer_cnt = 0;
-ros::Publisher g_pub_state, g_pub_joint, g_pub_moving;
+ros::Publisher g_pub_state, g_pub_joint, g_pub_moving, heartbeat;
 
 bool g_ismoving = false, g_mode_script = false, g_mode_periodic = false, g_mode_polling = false;
 float g_goal_position = NAN, g_goal_speed = NAN, g_speed = 10.0;
 bool new_command_msg = false;
 
+SpecializedGripperActionController::Ptr special_action_client_ptr;
 GripperActionController::Ptr action_client_ptr;
 Gripper_Monitor::Ptr gripper_monitor_ptr;
+//XamlaSysmonWatchPtr watcher;
 
 std::mutex g_controll_mutex;
 
@@ -100,6 +108,9 @@ bool g_is_grasp_active = false;
 bool g_is_release_active = false;
 bool g_is_stop_active = false;
 bool g_is_ack_active = false;
+
+// Initialize 2D array
+
 //------------------------------------------------------------------------
 // Unit testing
 //------------------------------------------------------------------------
@@ -114,16 +125,17 @@ bool g_is_ack_active = false;
 
 bool moveSrv(wsg_50_common::Move::Request &req, wsg_50_common::Move::Response &res)
 {
-    if (g_controll_mutex.try_lock())
+    ROS_INFO("Enter move service.");
+    if (!g_ismoving && g_controll_mutex.try_lock())
     {
         if ((req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0))
         {
             ROS_INFO("Moving to %f position at %f mm/s.", req.width, req.speed);
-            res.error = move(req.width, req.speed, false);
+            res.error = move(req.width, req.speed, false, true);
         }
         else if (req.width < 0.0 || req.width > 110.0)
         {
-            ROS_ERROR("Imposible to move to this position. (Width values: [0.0 - 110.0] ");
+            ROS_ERROR("Imposible to move to this position. (Width values: [0.0 - 110.0] requested: %f", req.width);
             res.error = 255;
             g_controll_mutex.unlock();
             return false;
@@ -131,9 +143,15 @@ bool moveSrv(wsg_50_common::Move::Request &req, wsg_50_common::Move::Response &r
         else
         {
             ROS_WARN("Speed values are outside the gripper's physical limits ([0.1 - 420.0])  Using clamped values.");
-            res.error = move(req.width, req.speed, false);
+            res.error = move(req.width, req.speed, false, true);
         }
         g_controll_mutex.unlock();
+        ROS_INFO("Target position reached.");
+        g_ismoving = true;
+        g_controll_mutex.unlock();
+        ros::Duration dt(0.1);
+        while (g_ismoving)
+            dt.sleep();
     }
     else
     {
@@ -142,13 +160,12 @@ bool moveSrv(wsg_50_common::Move::Request &req, wsg_50_common::Move::Response &r
         return false;
     }
 
-    ROS_INFO("Target position reached.");
     return true;
 }
 
 bool graspSrv(wsg_50_common::Move::Request &req, wsg_50_common::Move::Response &res)
 {
-    if (g_controll_mutex.try_lock())
+    if (!g_is_grasp_active && g_controll_mutex.try_lock())
     {
         if ((req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0))
         {
@@ -172,7 +189,6 @@ bool graspSrv(wsg_50_common::Move::Request &req, wsg_50_common::Move::Response &
         ros::Duration dt(0.1);
         while (g_is_grasp_active)
             dt.sleep();
-
     }
     else
     {
@@ -253,7 +269,7 @@ bool incrementSrv(wsg_50_common::Incr::Request &req, wsg_50_common::Incr::Respon
 
 bool releaseSrv(wsg_50_common::Move::Request &req, wsg_50_common::Move::Response &res)
 {
-    if (g_controll_mutex.try_lock())
+    if (!g_is_release_active && g_controll_mutex.try_lock())
     {
         if ((req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0))
         {
@@ -275,8 +291,9 @@ bool releaseSrv(wsg_50_common::Move::Request &req, wsg_50_common::Move::Response
         }
         g_controll_mutex.unlock();
         ros::Duration dt(0.1);
-        while (g_is_grasp_active)
+        while (g_is_release_active)
             dt.sleep();
+        ROS_INFO("Object released correctly.");
     }
     else
     {
@@ -284,22 +301,23 @@ bool releaseSrv(wsg_50_common::Move::Request &req, wsg_50_common::Move::Response
         res.error = 255;
         return false;
     }
-    ROS_INFO("Object released correctly.");
+
     return true;
 }
 
 bool homingSrv(std_srvs::Empty::Request &req, std_srvs::Empty::Request &res)
 {
-    if (g_controll_mutex.try_lock())
+    if (!g_is_homing_active && g_controll_mutex.try_lock())
     {
         ROS_INFO("Homing...");
         homing(true);
         g_is_homing_active = true;
-        ROS_INFO("Home position reached.");
         g_controll_mutex.unlock();
         ros::Duration dt(0.1);
         while (g_is_homing_active)
             dt.sleep();
+
+        ROS_INFO("Home position reached.");
     }
     else
     {
@@ -311,7 +329,7 @@ bool homingSrv(std_srvs::Empty::Request &req, std_srvs::Empty::Request &res)
 
 bool stopSrv(std_srvs::Empty::Request &req, std_srvs::Empty::Request &res)
 {
-    if (g_controll_mutex.try_lock())
+    if (!g_is_stop_active && g_controll_mutex.try_lock())
     {
         ROS_INFO("Stopping...");
         stop(true);
@@ -346,7 +364,7 @@ bool setForceSrv(wsg_50_common::Conf::Request &req, wsg_50_common::Conf::Respons
 
 bool ackSrv(std_srvs::Empty::Request &req, std_srvs::Empty::Request &res)
 {
-    if (g_controll_mutex.try_lock())
+    if (!g_is_ack_active && g_controll_mutex.try_lock())
     {
         ack_fault(true);
         g_is_ack_active = true;
@@ -381,6 +399,69 @@ void position_cb(const wsg_50_common::Cmd::ConstPtr &msg)
         stop(true);
         if (move(g_goal_position, g_speed, false, true) != 0)
             ROS_ERROR("Failed to send MOVE command");
+    }
+}
+
+/** \brief Callback for goal_position topic (in appropriate modes) */
+void command_cb(const wsg_50_common::StateCmd::ConstPtr &msg)
+{
+    ROS_INFO("got position command");
+    g_speed = msg->speed;
+    g_goal_position = msg->pos;
+    // timer_cb() will send command to gripper
+
+    if (g_mode_periodic)
+    {
+        // Send command to gripper without waiting for a response
+        // read_thread() handles responses
+        // read/write may be simultaneous, therefore no mutex
+        stop(true);
+
+        if (msg->command == msg->GRASP)
+        {
+            if (grasp(g_goal_position, g_speed, true) != 0)
+            {
+                ROS_ERROR("Failed to send GRASP command");
+            }
+            else
+            {
+                g_is_grasp_active = true;
+            }
+        }
+        else if (msg->command == msg->RELEASE)
+        {
+            if (release(g_goal_position, g_speed, true) != 0)
+            {
+                ROS_ERROR("Failed to send RELEASE command");
+            }
+            else
+            {
+                g_is_release_active = true;
+            }
+        }
+        else if (msg->command == msg->MOVE)
+        {
+            ROS_INFO("Failed to send MOVE command");
+            if (move(g_goal_position, g_speed, false, true) != 0)
+            {
+                ROS_ERROR("Failed to send MOVE command");
+            }
+            else
+            {
+                g_ismoving = true;
+            }
+        }
+        else if (msg->command == msg->HOMING)
+        {
+            if (homing(true) != 0)
+            {
+                ROS_ERROR("Failed to send HOMING command");
+            }
+            else
+            {
+                g_is_homing_active = true;
+            }
+        }
     }
 }
 
@@ -493,7 +574,6 @@ void timer_cb(const ros::TimerEvent &ev)
     // printf("Timer, last duration: %6.1f\n", ev.profile.last_duration.toSec() * 1000.0);
 }
 
-
 /** \brief Reads gripper responses in auto_update mode. The gripper pushes state messages in regular intervals. */
 void read_thread(int interval_ms)
 {
@@ -530,34 +610,51 @@ void read_thread(int interval_ms)
     msg.len = 0;
     int cnt[3] = {0, 0, 0};
     auto time_start = std::chrono::system_clock::now();
+    xamla_sysmon_msgs::HeartBeat heartmsg;
 
     while (g_mode_periodic)
     {
+        heartmsg.header.stamp = ros::Time::now();
+        heartmsg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::GO);
+        heartmsg.details = "";
 
+        special_action_client_ptr->update(ros::Time::now(), dt);
         action_client_ptr->update(ros::Time::now(), dt);
 
         if (g_is_homing_active)
+        {
             gripper_monitor_ptr->set_homing_active();
-
-        if (g_is_grasp_active)
+        }
+        else if (g_is_grasp_active)
+        {
             gripper_monitor_ptr->set_grasp_active();
-
-        if (g_is_release_active)
+        }
+        else if (g_is_release_active)
+        {
             gripper_monitor_ptr->set_release_active();
-
-        if (g_is_stop_active)
+        }
+        else if (g_is_stop_active)
+        {
             gripper_monitor_ptr->set_stop_active();
-
-        if (g_is_ack_active)
+        }
+        else if (g_is_ack_active)
+        {
             gripper_monitor_ptr->set_ack_active();
-
-
+        }
+        else if (g_ismoving)
+        {
+        }
 
         gripper_monitor_ptr->update();
         bool pub_state = gripper_monitor_ptr->isStateReady();
         int motion = gripper_monitor_ptr->isMoving();
         status_msg = gripper_monitor_ptr->get_gripper_status_msg();
-        int* last_cnt = gripper_monitor_ptr->get_count();
+        if (status_msg.status_id == status_msg.ERROR)
+        {
+            heartmsg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::INTERNAL_ERROR);
+            heartmsg.details += "Weiss gripper is in Error state. ";
+        }
+        int *last_cnt = gripper_monitor_ptr->get_count();
         cnt[0] = last_cnt[0];
         cnt[1] = last_cnt[1];
         cnt[2] = last_cnt[2];
@@ -572,7 +669,7 @@ void read_thread(int interval_ms)
             std_msgs::Bool moving_msg;
             moving_msg.data = motion;
             g_pub_moving.publish(moving_msg);
-            g_ismoving = motion;
+            g_ismoving = motion > 0;
         }
 
         // ***** PUBLISH state message & joint message
@@ -606,15 +703,18 @@ void read_thread(int interval_ms)
                 double rate_is = (double)cnt[i] / t_;
                 info += names[i] + ": " + std::to_string((int)rate_is) + "Hz, ";
                 if (rate_is == 0.0)
+                {
                     ROS_ERROR("Did not receive data for %s", names[i].c_str());
+                    heartmsg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::INTERNAL_ERROR);
+                    heartmsg.details += "Did not receive data for " + names[i] + " ";
+                }
             }
             ROS_DEBUG_STREAM((info + " expected: " + std::to_string((int)rate_exp) + "Hz").c_str());
             cnt[0] = 0;
             cnt[1] = 0;
             cnt[2] = 0;
         }
-
-
+        heartbeat.publish(heartmsg);
     }
 
     // Disable automatic updates
@@ -622,6 +722,7 @@ void read_thread(int interval_ms)
     getOpening(0);
     getSpeed(0);
     getForce(0);
+    graspingState(0);
 
     ROS_INFO("Thread ended");
 }
@@ -675,7 +776,8 @@ int main(int argc, char **argv)
         com_mode = "polling";
         g_mode_polling = true;
     }
-    action_client_ptr.reset(new GripperActionController());
+    special_action_client_ptr.reset(new SpecializedGripperActionController("gripper_cmd"));
+    action_client_ptr.reset(new GripperActionController("gripper_controller"));
 
     ROS_INFO("Connecting to %s:%d (%s); communication mode: %s ...", ip.c_str(), port, protocol.c_str(), com_mode.c_str());
 
@@ -691,29 +793,34 @@ int main(int argc, char **argv)
         ROS_INFO("Gripper connection stablished");
 
         // Services
-        ros::ServiceServer moveSS, graspSS, releaseSS, homingSS, stopSS, ackSS, incrementSS, setAccSS, setForceSS;
+        ros::ServiceServer infoS, moveSS, graspSS, releaseSS, homingSS, stopSS, ackSS, incrementSS, setAccSS, setForceSS;
 
         if (g_mode_script || g_mode_polling)
         {
-            moveSS = nh.advertiseService("move", moveSrv);
+
             incrementSS = nh.advertiseService("move_incrementally", incrementSrv);
 
             setAccSS = nh.advertiseService("set_acceleration", setAccSrv);
             setForceSS = nh.advertiseService("set_force", setForceSrv);
-
         }
+        moveSS = nh.advertiseService("move", moveSrv);
         graspSS = nh.advertiseService("grasp", graspSrv);
         releaseSS = nh.advertiseService("release", releaseSrv);
         homingSS = nh.advertiseService("homing", homingSrv);
         stopSS = nh.advertiseService("stop", stopSrv);
         ackSS = nh.advertiseService("ack", ackSrv);
+
         // Subscriber
-        ros::Subscriber sub_position, sub_speed;
+        ros::Subscriber sub_command, sub_position, sub_speed;
         if (g_mode_script || g_mode_periodic || g_mode_polling)
+        {
             sub_position = nh.subscribe("goal_position", 5, position_cb);
+            sub_command = nh.subscribe("goal_command", 5, command_cb);
+        }
         if (g_mode_script)
             sub_speed = nh.subscribe("goal_speed", 5, speed_cb);
 
+        special_action_client_ptr->init(root, nh);
         action_client_ptr->init(root, nh);
         // Publisher
         g_pub_state = nh.advertise<wsg_50_common::Status>("status", 1000);
@@ -721,6 +828,13 @@ int main(int argc, char **argv)
         if (g_mode_script || g_mode_periodic)
             g_pub_moving = nh.advertise<std_msgs::Bool>("moving", 10);
 
+        heartbeat = nh.advertise<xamla_sysmon_msgs::HeartBeat>("heartbeat", 1);
+        xamla_sysmon_msgs::HeartBeat msg;
+        msg.header.stamp = ros::Time::now();
+
+        msg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::STARTING);
+        msg.details = TopicHeartbeatStatus::generateMessageText(TopicHeartbeatStatus::intToStatusCode(msg.status));
+        heartbeat.publish(msg);
         ROS_INFO("Ready to use, homing now...");
         homing();
 
@@ -730,6 +844,8 @@ int main(int argc, char **argv)
             setGraspingForceLimit(grasping_force);
         }
         gripper_monitor_ptr.reset(new Gripper_Monitor((int)(1000.0 / rate)));
+        //watcher.reset(new XamlaSysmonWatch());
+        //watcher->start();
         ROS_INFO("Init done. Starting timer/thread with target rate %.1f.", rate);
         std::thread th;
         ros::Timer tmr;
@@ -749,13 +865,13 @@ int main(int argc, char **argv)
     g_mode_periodic = false;
     g_mode_script = false;
     g_mode_polling = false;
+    //if (watcher)
+    //    watcher->shutdown();
     sleep(1);
     cmd_disconnect();
 
     return 0;
-
 }
-
 
 //------------------------------------------------------------------------
 // Testing functions

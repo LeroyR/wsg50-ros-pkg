@@ -1,7 +1,12 @@
 #include "wsg_50/gripper_command_action.h"
+#include "wsg_50/specialized_gripper_command_action.h"
 
-namespace internal
+namespace gripper_command_action
 {
+SpecializedGripperActionController::SpecializedGripperActionController(std::string action_name) : action_name_(action_name)
+{
+}
+
 std::string getLeafNamespace(const ros::NodeHandle &nh)
 {
     const std::string complete_ns = nh.getNamespace();
@@ -9,58 +14,8 @@ std::string getLeafNamespace(const ros::NodeHandle &nh)
     return complete_ns.substr(id + 1);
 }
 
-boost::shared_ptr<urdf::Model> getUrdf(const ros::NodeHandle &nh, const std::string &param_name)
+bool SpecializedGripperActionController::init(ros::NodeHandle &root_nh, ros::NodeHandle &controller_nh)
 {
-    boost::shared_ptr<urdf::Model> urdf(new urdf::Model);
-    std::string urdf_str;
-    // Check for robot_description in proper namespace
-    if (nh.getParam(param_name, urdf_str))
-    {
-        if (!urdf->initString(urdf_str))
-        {
-            ROS_ERROR_STREAM("Failed to parse URDF contained in '" << param_name << "' parameter (namespace: " << nh.getNamespace() << ").");
-            return boost::shared_ptr<urdf::Model>();
-        }
-    }
-    // Check for robot_description in root
-    else if (!urdf->initParam("robot_description"))
-    {
-        ROS_ERROR_STREAM("Failed to parse URDF contained in '" << param_name << "' parameter");
-        return boost::shared_ptr<urdf::Model>();
-    }
-    return urdf;
-}
-
-typedef boost::shared_ptr<const urdf::Joint> UrdfJointConstPtr;
-std::vector<UrdfJointConstPtr> getUrdfJoints(const urdf::Model &urdf, const std::vector<std::string> &joint_names)
-{
-    std::vector<UrdfJointConstPtr> out;
-    for (unsigned int i = 0; i < joint_names.size(); ++i)
-    {
-        UrdfJointConstPtr urdf_joint = urdf.getJoint(joint_names[i]);
-        if (urdf_joint)
-        {
-            out.push_back(urdf_joint);
-        }
-        else
-        {
-            ROS_ERROR_STREAM("Could not find joint '" << joint_names[i] << "' in URDF model.");
-            return std::vector<UrdfJointConstPtr>();
-        }
-    }
-    return out;
-}
-} // namespace
-
-namespace gripper_command_action
-{
-GripperActionController::GripperActionController(std::string action_name) : action_name_(action_name)
-{
-}
-
-bool GripperActionController::init(ros::NodeHandle &root_nh, ros::NodeHandle &controller_nh)
-{
-    using namespace internal;
 
     // Cache controller node handle
     controller_nh_ = controller_nh;
@@ -81,22 +36,6 @@ bool GripperActionController::init(ros::NodeHandle &root_nh, ros::NodeHandle &co
         return false;
     }
 
-    // URDF joints
-    /*
-    boost::shared_ptr<urdf::Model> urdf = getUrdf(root_nh, "robot_description");
-    if (!urdf)
-    {
-        return false;
-    }
-
-    std::vector<std::string> joint_names;
-    joint_names.push_back(joint_name_);
-    std::vector<UrdfJointConstPtr> urdf_joints = getUrdfJoints(*urdf, joint_names);
-    if (urdf_joints.empty())
-    {
-        return false;
-    }
-*/
     // Default tolerances
     controller_nh_.param<double>("goal_tolerance", goal_tolerance_, 0.001);
     goal_tolerance_ = fabs(goal_tolerance_);
@@ -110,25 +49,26 @@ bool GripperActionController::init(ros::NodeHandle &root_nh, ros::NodeHandle &co
     command_struct_.position_ = 0.0;
     command_struct_.max_effort_ = default_max_effort_;
     // Result
-    pre_alloc_result_.reset(new control_msgs::GripperCommandResult());
+    pre_alloc_result_.reset(new wsg_50_common::WeissGripperCmdResult());
     pre_alloc_result_->position = command_struct_.position_;
     pre_alloc_result_->reached_goal = false;
     pre_alloc_result_->stalled = false;
+    pre_alloc_result_->status = "UNKNOWN";
 
     // Gripper state and command
-    pub_gripper_command_ = controller_nh_.advertise<wsg_50_common::Cmd>(
-        "goal_position", 1);
-    sub_gripper_state_ = controller_nh_.subscribe("status", 1, &GripperActionController::controllerStateCB, this);
+    pub_gripper_command_ = controller_nh_.advertise<wsg_50_common::StateCmd>(
+        "goal_command", 1);
+    sub_gripper_state_ = controller_nh_.subscribe("status", 1, &SpecializedGripperActionController::controllerStateCB, this);
     // ROS API: Action interface
     action_server_.reset(new ActionServer(controller_nh_, action_name_,
-                                          boost::bind(&GripperActionController::goalCB, this, _1),
-                                          boost::bind(&GripperActionController::cancelCB, this, _1),
+                                          boost::bind(&SpecializedGripperActionController::goalCB, this, _1),
+                                          boost::bind(&SpecializedGripperActionController::cancelCB, this, _1),
                                           false));
     action_server_->start();
     return true;
 }
 
-void GripperActionController::goalCB(GoalHandle gh)
+void SpecializedGripperActionController::goalCB(GoalHandle gh)
 {
     if (has_active_goal_)
     {
@@ -138,20 +78,15 @@ void GripperActionController::goalCB(GoalHandle gh)
     else
     {
         ROS_INFO("Received action goal request");
-        command_struct_.position_ = gh.getGoal()->command.position;
-        command_struct_.max_effort_ = gh.getGoal()->command.max_effort;
         gh.setAccepted();
         active_goal_ = gh;
         has_active_goal_ = true;
-        wsg_50_common::Cmd command_msg;
-        command_msg.pos = command_struct_.position_ * 1000;
-        command_msg.speed = 150;
-        pub_gripper_command_.publish(command_msg);
+        pub_gripper_command_.publish(gh.getGoal()->cmd);
         last_movement_time_ = ros::Time::now();
     }
 }
 
-void GripperActionController::cancelCB(GoalHandle gh)
+void SpecializedGripperActionController::cancelCB(GoalHandle gh)
 {
     ROS_WARN("Received action cancel request");
     // Check that cancel request refers to currently active goal (if any)
@@ -169,7 +104,7 @@ void GripperActionController::cancelCB(GoalHandle gh)
     }
 }
 
-void GripperActionController::preemptActiveGoal()
+void SpecializedGripperActionController::preemptActiveGoal()
 {
     // Cancels the currently active goal
     if (has_active_goal_)
@@ -182,21 +117,18 @@ void GripperActionController::preemptActiveGoal()
         }
     }
 }
-std::string GripperActionController::getTopic()
-{
-    return std::string(this->controller_nh_.getNamespace() + "/" + this->action_name_);
-}
 
-void GripperActionController::setHoldPosition(const ros::Time &time)
+void SpecializedGripperActionController::setHoldPosition(const ros::Time &time)
 {
     command_struct_.position_ = last_gripper_state_->width / 2; //SET TO CURRENT POSITION
     command_struct_.max_effort_ = default_max_effort_;
-    wsg_50_common::Cmd command_msg;
+    wsg_50_common::StateCmd command_msg;
     command_msg.pos = command_struct_.position_;
+    command_msg.command = command_msg.STOP;
     pub_gripper_command_.publish(command_msg);
 }
 
-void GripperActionController::checkForSuccess(const ros::Time &time, double error_position, double current_position, double current_velocity)
+void SpecializedGripperActionController::checkForSuccess(const ros::Time &time, double error_position, double current_position, double current_velocity)
 {
     if (!has_active_goal_)
         return;
@@ -210,6 +142,8 @@ void GripperActionController::checkForSuccess(const ros::Time &time, double erro
         pre_alloc_result_->position = current_position;
         pre_alloc_result_->reached_goal = true;
         pre_alloc_result_->stalled = false;
+        pre_alloc_result_->status = last_gripper_state_->status;
+
         active_goal_.setSucceeded(*pre_alloc_result_);
         has_active_goal_ = false;
     }
@@ -226,6 +160,7 @@ void GripperActionController::checkForSuccess(const ros::Time &time, double erro
             pre_alloc_result_->position = current_position;
             pre_alloc_result_->reached_goal = false;
             pre_alloc_result_->stalled = true;
+            pre_alloc_result_->status = last_gripper_state_->status;
             active_goal_.setAborted(*pre_alloc_result_);
             has_active_goal_ = false;
         }
@@ -236,7 +171,7 @@ void GripperActionController::checkForSuccess(const ros::Time &time, double erro
     }
 }
 
-void GripperActionController::update(const ros::Time &time, const ros::Duration &period)
+void SpecializedGripperActionController::update(const ros::Time &time, const ros::Duration &period)
 {
     if (state_recvd_)
     {
@@ -253,7 +188,7 @@ void GripperActionController::update(const ros::Time &time, const ros::Duration 
     }
 }
 
-void GripperActionController::controllerStateCB(
+void SpecializedGripperActionController::controllerStateCB(
     const wsg_50_common::StatusPtr &msg)
 {
     ROS_DEBUG("Checking controller state feedback");
@@ -262,5 +197,10 @@ void GripperActionController::controllerStateCB(
     last_vel = (msg->width - last_gripper_state_->width) / 2;
     last_gripper_state_ = msg;
     state_recvd_ = true;
+}
+
+std::string SpecializedGripperActionController::getTopic()
+{
+    return std::string(this->controller_nh_.getNamespace() + "/" + this->action_name_);
 }
 }
