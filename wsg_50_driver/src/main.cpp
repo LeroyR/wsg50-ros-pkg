@@ -776,8 +776,8 @@ int main(int argc, char **argv)
         com_mode = "polling";
         g_mode_polling = true;
     }
-    special_action_client_ptr.reset(new SpecializedGripperActionController("gripper_cmd"));
-    action_client_ptr.reset(new GripperActionController("gripper_controller"));
+    special_action_client_ptr.reset(new SpecializedGripperActionController("gripper_controller"));
+    action_client_ptr.reset(new GripperActionController("gripper_cmd"));
 
     ROS_INFO("Connecting to %s:%d (%s); communication mode: %s ...", ip.c_str(), port, protocol.c_str(), com_mode.c_str());
 
