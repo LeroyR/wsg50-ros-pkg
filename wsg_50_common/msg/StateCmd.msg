@@ -1,7 +1,7 @@
 uint32 command
-float32 pos
-float32 speed
-float32 max_effort
+float64 width
+float64 speed
+float64 max_effort
 uint32 STOP=100
 uint32 MOVE=101
 uint32 GRASP=102

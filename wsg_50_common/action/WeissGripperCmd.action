@@ -1,12 +1,12 @@
 StateCmd cmd
 ---
-float64 position
+float64 width
 float64 effort
 bool stalled
 bool reached_goal
 string status
 ---
-float64 position
+float64 width
 float64 effort
 bool stalled
 bool reached_goal
