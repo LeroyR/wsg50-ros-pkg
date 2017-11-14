@@ -73,7 +73,7 @@ int release( float width, float speed, bool ignore_response = false);
 int ack_fault(bool ignore_response);
 
 int setAcceleration( float acc );
-int setGraspingForceLimit( float force );
+int setGraspingForceLimit(float force, bool ignore_response = false);
 
 const char * systemState( void );
 gripstatus_t graspingState(int auto_update = 0);

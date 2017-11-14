@@ -14,7 +14,7 @@ std::string getLeafNamespace(const ros::NodeHandle &nh)
     return complete_ns.substr(id + 1);
 }
 
-bool SpecializedGripperActionController::init(ros::NodeHandle &root_nh, ros::NodeHandle &controller_nh)
+bool SpecializedGripperActionController::init(std::string controller_name, ros::NodeHandle &root_nh, ros::NodeHandle &controller_nh)
 {
 
     // Cache controller node handle
@@ -29,12 +29,12 @@ bool SpecializedGripperActionController::init(ros::NodeHandle &root_nh, ros::Nod
     ROS_DEBUG_STREAM_NAMED(name_, "Action status changes will be monitored at " << action_monitor_rate << "Hz.");
 
     // Controlled joint
-    controller_nh_.getParam("joint", joint_name_);
-    if (joint_name_.empty())
-    {
-        ROS_ERROR_STREAM_NAMED(name_, "Could not find joint name on param server");
-        return false;
-    }
+    //controller_nh_.getParam("joint", joint_name_);
+    //if (joint_name_.empty())
+    //{
+    //    ROS_ERROR_STREAM_NAMED(name_, "Could not find joint name on param server");
+    //    return false;
+    //}
 
     // Default tolerances
     controller_nh_.param<double>("goal_tolerance", goal_tolerance_, 0.001);
@@ -50,15 +50,15 @@ bool SpecializedGripperActionController::init(ros::NodeHandle &root_nh, ros::Nod
     command_struct_.max_effort_ = default_max_effort_;
     // Result
     pre_alloc_result_.reset(new wsg_50_common::WeissGripperCmdResult());
-    pre_alloc_result_->position = command_struct_.position_;
+    pre_alloc_result_->width = command_struct_.position_;
     pre_alloc_result_->reached_goal = false;
     pre_alloc_result_->stalled = false;
     pre_alloc_result_->status = "UNKNOWN";
 
     // Gripper state and command
     pub_gripper_command_ = controller_nh_.advertise<wsg_50_common::StateCmd>(
-        "goal_command", 1);
-    sub_gripper_state_ = controller_nh_.subscribe("status", 1, &SpecializedGripperActionController::controllerStateCB, this);
+        controller_name + "/goal_command", 1);
+    sub_gripper_state_ = controller_nh_.subscribe(controller_name + "/status", 1, &SpecializedGripperActionController::controllerStateCB, this);
     // ROS API: Action interface
     action_server_.reset(new ActionServer(controller_nh_, action_name_,
                                           boost::bind(&SpecializedGripperActionController::goalCB, this, _1),
@@ -81,6 +81,17 @@ void SpecializedGripperActionController::goalCB(GoalHandle gh)
         gh.setAccepted();
         active_goal_ = gh;
         has_active_goal_ = true;
+        if (gh.getGoal()->cmd.command != gh.getGoal()->cmd.HOMING)
+        {
+            command_struct_.position_ = gh.getGoal()->cmd.width;
+            command_struct_.max_effort_ = gh.getGoal()->cmd.max_effort;
+        }
+        else
+        {
+            command_struct_.position_ = 0.0;
+            command_struct_.max_effort_ = default_max_effort_;
+        }
+
         pub_gripper_command_.publish(gh.getGoal()->cmd);
         last_movement_time_ = ros::Time::now();
     }
@@ -123,7 +134,7 @@ void SpecializedGripperActionController::setHoldPosition(const ros::Time &time)
     command_struct_.position_ = last_gripper_state_->width / 2; //SET TO CURRENT POSITION
     command_struct_.max_effort_ = default_max_effort_;
     wsg_50_common::StateCmd command_msg;
-    command_msg.pos = command_struct_.position_;
+    command_msg.width = command_struct_.position_;
     command_msg.command = command_msg.STOP;
     pub_gripper_command_.publish(command_msg);
 }
@@ -139,7 +150,7 @@ void SpecializedGripperActionController::checkForSuccess(const ros::Time &time, 
     if (fabs(error_position) < goal_tolerance_)
     {
         pre_alloc_result_->effort = last_gripper_state_->force;
-        pre_alloc_result_->position = current_position;
+        pre_alloc_result_->width = current_position;
         pre_alloc_result_->reached_goal = true;
         pre_alloc_result_->stalled = false;
         pre_alloc_result_->status = last_gripper_state_->status;
@@ -151,13 +162,13 @@ void SpecializedGripperActionController::checkForSuccess(const ros::Time &time, 
     {
         if (fabs(current_velocity) > stall_velocity_threshold_)
         {
-            ROS_INFO_STREAM("no stall " << fabs(current_velocity));
+            ROS_DEBUG_STREAM("no stall " << fabs(current_velocity));
             last_movement_time_ = time;
         }
         else if ((time - last_movement_time_).toSec() > stall_timeout_)
         {
             pre_alloc_result_->effort = last_gripper_state_->force;
-            pre_alloc_result_->position = current_position;
+            pre_alloc_result_->width = current_position;
             pre_alloc_result_->reached_goal = false;
             pre_alloc_result_->stalled = true;
             pre_alloc_result_->status = last_gripper_state_->status;
@@ -166,7 +177,7 @@ void SpecializedGripperActionController::checkForSuccess(const ros::Time &time, 
         }
         else
         {
-            ROS_INFO_STREAM("current_position  " << current_position << " goal_tolerance: " << goal_tolerance_ << " error_position: " << fabs(error_position) << " velocity: " << fabs(current_velocity));
+            ROS_DEBUG_STREAM("current_position  " << current_position << " goal_tolerance: " << goal_tolerance_ << " error_position: " << fabs(error_position) << " velocity: " << fabs(current_velocity));
         }
     }
 }
@@ -175,10 +186,11 @@ void SpecializedGripperActionController::update(const ros::Time &time, const ros
 {
     if (state_recvd_)
     {
-        double current_position = last_gripper_state_->width / 1000;
+        double current_position = last_gripper_state_->width / 2000;
         double current_velocity = last_vel;
         double error_position = command_struct_.position_ - current_position;
         double error_velocity = -current_velocity;
+        ROS_DEBUG_STREAM("command: " << command_struct_.position_ << " current: " << current_position);
         checkForSuccess(time, error_position, current_position, current_velocity);
         state_recvd_ = false;
     }

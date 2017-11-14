@@ -45,7 +45,7 @@ class SpecializedGripperActionController
       ros::spin();
     }
 
-    bool init(ros::NodeHandle &root_nh, ros::NodeHandle &controller_nh);
+    bool init(std::string controller_name, ros::NodeHandle &root_nh, ros::NodeHandle &controller_nh);
     /*\}*/
     std::string getTopic();
 

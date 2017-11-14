@@ -514,7 +514,7 @@ int setAcceleration(float acc)
     return 0;
 }
 
-int setGraspingForceLimit(float force)
+int setGraspingForceLimit(float force, bool ignore_response)
 {
     status_t status;
     int res;
@@ -524,24 +524,40 @@ int setGraspingForceLimit(float force)
 
     // Copy target width and speed
     memcpy(&payload[0], &force, sizeof(float));
-
-    // Submit command and wait for response. Push result to stack.
-    res = cmd_submit(0x32, payload, 4, true, &resp, &resp_len);
-    if (res != 2)
+    if (!ignore_response)
     {
-        dbgPrint("Response payload length doesn't match (is %d, expected 2)\n", res);
-        if (res > 0)
-            free(resp);
-        return 0;
+        // Submit command and wait for response. Push result to stack.
+        res = cmd_submit(0x32, payload, 4, true, &resp, &resp_len);
+        if (res != 2)
+        {
+            dbgPrint("Response payload length doesn't match (is %d, expected 2)\n", res);
+            if (res > 0)
+                free(resp);
+            return 0;
+        }
+
+        // Check response status
+        status = cmd_get_response_status(resp);
+        free(resp);
+        if (status != E_SUCCESS)
+        {
+            dbgPrint("Command SET GRASPING FORCE LIMIT not successful: %s\n", status_to_str(status));
+            return -1;
+        }
     }
-
-    // Check response status
-    status = cmd_get_response_status(resp);
-    free(resp);
-    if (status != E_SUCCESS)
+    else
     {
-        dbgPrint("Command SET GRASPING FORCE LIMIT not successful: %s\n", status_to_str(status));
-        return -1;
+        // Submit command, do not wait for response
+        msg_t msg;
+        msg.id = 0x32;
+        msg.len = 4;
+        msg.data = &payload[0];
+        res = msg_send(&msg);
+        if (res <= 0)
+        {
+            dbgPrint("Failed to send command RELEASE\n");
+            return -1;
+        }
     }
 
     return 0;

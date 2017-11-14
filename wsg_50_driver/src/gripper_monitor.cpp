@@ -142,7 +142,7 @@ int Gripper_Monitor::update()
         }
         else if (status == E_ALREADY_RUNNING)
         {
-            ROS_INFO("Movement error: already running");
+            ROS_INFO("Movement: already running");
         }
         else if (status == E_CMD_ABORTED)
         {
@@ -164,10 +164,14 @@ int Gripper_Monitor::update()
         {
             ROS_INFO("Command STOP successful\n");
             this->active_stop = false;
-        }else if(status == E_CMD_PENDING){
+        }
+        else if (status == E_CMD_PENDING)
+        {
             ROS_INFO("Command STOP PENDING\n");
             this->active_stop = true;
-        }else{
+        }
+        else
+        {
             this->active_stop = false;
             ROS_ERROR("Command STOP not successful\n");
             return -1;
@@ -179,10 +183,19 @@ int Gripper_Monitor::update()
         {
             ROS_INFO("Command HOMING successful\n");
             this->active_homing = false;
-        }else if(status == E_CMD_PENDING){
+        }
+        else if (status == E_CMD_PENDING)
+        {
             ROS_INFO("Command HOMING PENDING\n");
             this->active_homing = true;
-        }else{
+        }
+        else if (status == E_ALREADY_RUNNING)
+        {
+            ROS_INFO("Command HOMING IS ALREADY RUNNING\n");
+            this->active_homing = true;
+        }
+        else
+        {
             this->active_homing = false;
             ROS_ERROR("Command HOMING not successful\n");
             return -1;
@@ -190,9 +203,20 @@ int Gripper_Monitor::update()
         break;
     case 0x24:
     { //ack_fault
-        if (status != E_SUCCESS)
+        if (status == E_SUCCESS)
         {
-            ROS_ERROR("Command ACK not successful\n");
+            ROS_INFO("Command ACK successful\n");
+            this->active_ack = false;
+        }
+        else if (status == E_CMD_PENDING)
+        {
+            ROS_INFO("Command ACK PENDING\n");
+            this->active_ack = true;
+        }
+        else
+        {
+            this->active_homing = false;
+            ROS_ERROR("Command ACK not successful. status: %d\n", status);
             return -1;
         }
         this->active_ack = false;
@@ -205,12 +229,47 @@ int Gripper_Monitor::update()
         {
             ROS_INFO("Command GRASP successful\n");
             this->active_grasp = false;
-        }else if(status == E_CMD_PENDING){
+        }
+        else if (status == E_CMD_PENDING)
+        {
             ROS_INFO("Command GRASP PENDING\n");
             this->active_grasp = true;
-        }else{
+        }
+        else if (status == E_CMD_FAILED)
+        {
+            ROS_INFO("Command GRASP NO_PART_FOUND\n");
             this->active_grasp = false;
-            ROS_ERROR("Command GRASP not successful\n");
+        }else if (status == E_RANGE_ERROR)
+        {
+            ROS_INFO("Command GRASP Parameter WIDTH verletzt die voreingestellten Soft Limits\n");
+            this->active_release = false;
+        }
+        else if (status == E_CMD_FORMAT_ERROR)
+        {
+            ROS_INFO("Command GRASP CMD_FORMAT_ERROR\n");
+            this->active_release = false;
+            return -1;
+        }else if (status == E_RANGE_ERROR)
+        {
+            ROS_INFO("Command GRASP E_RANGE_ERROR\n");
+            this->active_release = false;
+            return -1;
+        }else if (status == E_ACCESS_DENIED)
+        {
+            ROS_INFO("Command GRASP  FAST STOP\n");
+            this->active_release = false;
+            return -1;
+        }
+        else if (status == E_ALREADY_RUNNING)
+        {
+            ROS_INFO("Command GRASP  FAST STOP\n");
+            this->active_release = false;
+            return -1;
+        }
+        else
+        {
+            this->active_grasp = false;
+            ROS_ERROR("Command GRASP not successful status: %d\n", status);
             return -1;
         }
         break;
@@ -221,12 +280,30 @@ int Gripper_Monitor::update()
         {
             ROS_INFO("Command RELEASE successful\n");
             this->active_release = false;
-        }else if(status == E_CMD_PENDING){
+        }
+        else if (status == E_CMD_PENDING)
+        {
             ROS_INFO("Command RELEASE PENDING\n");
             this->active_release = true;
-        }else{
+        }
+        else if (status == E_CMD_ABORTED)
+        {
+            ROS_INFO("Command RELEASE ABORTED\n");
+            this->active_release = true;
+        }else if (status == E_RANGE_ERROR)
+        {
+            ROS_INFO("Command RELEASE Parameter WIDTH verletzt die voreingestellten Soft Limits\n");
             this->active_release = false;
-            ROS_ERROR("Command RELEASE not successful\n");
+        }
+        else if (status == E_CMD_FORMAT_ERROR)
+        {
+            ROS_INFO("Command RELEASE CMD_FORMAT_ERROR\n");
+            this->active_release = false;
+        }
+        else
+        {
+            this->active_release = false;
+            ROS_ERROR("Command RELEASE not successful. status: %d\n", status);
             return -1;
         }
         break;

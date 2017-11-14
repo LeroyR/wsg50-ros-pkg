@@ -74,12 +74,12 @@ bool GripperActionController::init(ros::NodeHandle &root_nh, ros::NodeHandle &co
     ROS_DEBUG_STREAM_NAMED(name_, "Action status changes will be monitored at " << action_monitor_rate << "Hz.");
 
     // Controlled joint
-    controller_nh_.getParam("joint", joint_name_);
-    if (joint_name_.empty())
-    {
-        ROS_ERROR_STREAM_NAMED(name_, "Could not find joint name on param server");
-        return false;
-    }
+    //controller_nh_.getParam("joint", joint_name_);
+    //if (joint_name_.empty())
+    //{
+    //    ROS_ERROR_STREAM_NAMED(name_, "Could not find joint name on param server");
+    //    return false;
+    //}
 
     // URDF joints
     /*
