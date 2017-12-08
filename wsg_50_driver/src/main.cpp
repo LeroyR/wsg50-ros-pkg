@@ -631,8 +631,6 @@ void read_thread(int interval_ms)
         heartmsg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::GO);
         heartmsg.details = "";
 
-        special_action_client_ptr->update(ros::Time::now(), dt);
-
         //action_client_ptr->update(ros::Time::now(), dt);
         {
             //std::lock_guard<std::mutex> guard(g_control_mutex);
@@ -661,6 +659,7 @@ void read_thread(int interval_ms)
             else if (g_ismoving)
             {
             }
+            special_action_client_ptr->update(ros::Time::now(), dt);
             //ROS_INFO("update thread");
             gripper_monitor_ptr->update();
             pub_state = gripper_monitor_ptr->isStateReady();
@@ -881,7 +880,7 @@ int main(int argc, char **argv)
         if (g_mode_script)
             sub_speed = nh.subscribe(controller_name + "/goal_speed", 5, speed_cb);
 
-        special_action_client_ptr->init(controller_name, root, nh);
+
         //action_client_ptr->init(root, nh);
         // Publisher
         g_pub_state = nh.advertise<wsg_50_common::Status>(controller_name + "/status", 1000);
@@ -905,6 +904,7 @@ int main(int argc, char **argv)
             setGraspingForceLimit(grasping_force);
         }
         gripper_monitor_ptr.reset(new Gripper_Monitor((int)(1000.0 / rate)));
+        special_action_client_ptr->init(controller_name, root, nh);
         //watcher.reset(new XamlaSysmonWatch());
         //watcher->start();
         ROS_INFO("Init done. Starting timer/thread with target rate %.1f.", rate);

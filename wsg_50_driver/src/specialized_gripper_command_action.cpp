@@ -150,7 +150,7 @@ void SpecializedGripperActionController::checkForSuccess(const ros::Time &time, 
     if (fabs(error_position) < goal_tolerance_)
     {
         pre_alloc_result_->effort = last_gripper_state_->force;
-        pre_alloc_result_->width = current_position;
+        pre_alloc_result_->width = current_position * 2;
         pre_alloc_result_->reached_goal = true;
         pre_alloc_result_->stalled = false;
         pre_alloc_result_->status = last_gripper_state_->status;
@@ -168,7 +168,7 @@ void SpecializedGripperActionController::checkForSuccess(const ros::Time &time, 
         else if ((time - last_movement_time_).toSec() > stall_timeout_)
         {
             pre_alloc_result_->effort = last_gripper_state_->force;
-            pre_alloc_result_->width = current_position;
+            pre_alloc_result_->width = current_position * 2;
             pre_alloc_result_->reached_goal = false;
             pre_alloc_result_->stalled = true;
             pre_alloc_result_->status = last_gripper_state_->status;
@@ -186,12 +186,13 @@ void SpecializedGripperActionController::update(const ros::Time &time, const ros
 {
     if (state_recvd_)
     {
-        double current_position = last_gripper_state_->width / 2000;
+        double current_position = last_gripper_state_->width / 1000;
         double current_velocity = last_vel;
         double error_position = command_struct_.position_ - current_position;
         double error_velocity = -current_velocity;
-        ROS_DEBUG_STREAM("command: " << command_struct_.position_ << " current: " << current_position);
+        ROS_INFO_STREAM("command: " << command_struct_.position_ << " current: " << current_position);
         checkForSuccess(time, error_position, current_position, current_velocity);
+
         state_recvd_ = false;
     }
     else
