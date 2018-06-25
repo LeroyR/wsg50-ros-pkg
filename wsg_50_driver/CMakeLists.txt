@@ -14,6 +14,18 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
 )
 
+catkin_python_setup()
+
+add_service_files(
+  FILES
+  SetWsgParam.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+
 catkin_package(
 #   INCLUDE_DIRS include
 #  LIBRARIES vh_pixelmap

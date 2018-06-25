@@ -1,14 +1,18 @@
 <?xml version="1.0"?>
 <launch>
-
+	<arg name="ip" default="192.168.50.33" />
   <!--<node name="wsg50_driver"  pkg="wsg_50_driver" type="wsg_50_ip" launch-prefix="gdbserver localhost:3456">-->
   <!-- launch-prefix="nice -n -10" -->
   <group ns="xamla">
   	  <!--<node name="wsg50_driver"  pkg="wsg_50_driver" type="wsg_50_ip" output="screen" launch-prefix="gdbserver localhost:3456" >-->
 	  <node name="wsg50_driver"  pkg="wsg_50_driver" type="wsg_50_ip" output="screen" >
-		<param name="ip" type="string" value="192.168.50.33"/>
+		<param name="ip" type="string" value="$(arg ip)"/>
 		<param name="port" type="int" value="1000"/>
 		<rosparam command="load" file="$(find wsg_50_driver)/launch/grippercontroller.yaml" />
+	  </node>
+
+   	<node name="wsg50_driver_services"  pkg="wsg_50_driver" type="web_services.py" output="screen" >
+		 		<param name="ip" type="string" value="$(arg ip)"/>
 	  </node>
   </group>
 
