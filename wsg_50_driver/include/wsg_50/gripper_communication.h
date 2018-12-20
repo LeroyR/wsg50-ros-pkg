@@ -56,6 +56,7 @@ public:
   int32_t system_state;
   ConnectionState connection_state;
   bool initialized;
+  bool homed;
 
   GripperState()
   {
@@ -68,6 +69,7 @@ public:
     this->system_state = -1;
     this->connection_state = ConnectionState::NOT_CONNECTED;
     this->initialized = false;
+    this->homed = true; // Is set to false if we did not receive a position value update within a short timeout.
   }
 
   std::string getGraspStateText()
@@ -210,6 +212,7 @@ private:
   void processMessages(int max_number_of_messages = 100);
 
   void graspingStateCallback(Message& message);
+  void checkPositionUpdateTimeout(Message& message);
   void widthCallback(Message& message);
   void requestConfiguredAcceleration();
   void requestConfiguredGraspingForce();
@@ -224,9 +227,12 @@ private:
   bool is_gripper_error_state_overwritten;
   int32_t alternative_gripper_error_state;
   int auto_update_interval_ms;
+  int position_update_interval_ms;
   int command_timeout_ms;
   int reconnect_timeout_ms;
+  bool print_position_update_timeout;
   ros::Time last_received_update;
+  ros::Time last_received_position_update;
 };
 
 class MessageQueueFull : public std::runtime_error

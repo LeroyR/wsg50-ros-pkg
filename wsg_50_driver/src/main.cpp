@@ -561,6 +561,11 @@ void loop_cb(const ros::TimerEvent& ev)
         heartbeat_msg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::INTERNAL_ERROR);
         heartbeat_msg.details = "Gripper is in unknown or error state.";
       }
+      else if (gripperState.homed == false)
+      {
+        heartbeat_msg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::INTERNAL_ERROR);
+        heartbeat_msg.details = "Gripper is not homed.";
+      }
       else
       {
         heartbeat_msg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::GO);

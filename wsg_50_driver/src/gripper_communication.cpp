@@ -17,9 +17,12 @@ GripperCommunication::GripperCommunication(std::string host, int port, int auto_
   this->command_timeout_ms = command_timeout_ms;
   this->auto_update_interval_ms = auto_update_interval_ms;
   this->reconnect_timeout_ms = reconnect_timeout_ms;
+  this->position_update_interval_ms = reconnect_timeout_ms;
   this->is_gripper_error_state_overwritten = false;
   this->alternative_gripper_error_state = 0;
-  last_received_update = ros::Time(0);
+  this->last_received_update = ros::Time(0);
+  this->last_received_position_update = ros::Time(0);
+  this->print_position_update_timeout = true;
   running = true;
 }
 
@@ -314,6 +317,7 @@ void GripperCommunication::initializeSubscriptions()
   if (this->gripper_state.connection_state == ConnectionState::CONNECTED)
   {
     this->last_received_update = ros::Time::now();
+    this->last_received_position_update = ros::Time::now();
     try
     {
       this->activateAutomaticValueUpdates();
@@ -352,6 +356,43 @@ void GripperCommunication::doWork()
   }
 }
 
+void GripperCommunication::checkPositionUpdateTimeout(Message& message)
+{
+  if (message.id == (unsigned char)WellKnownMessageId::OPENING_VALUES)
+  {
+      this->last_received_position_update = ros::Time::now();
+  }
+  else if (message.id == (unsigned char)WellKnownMessageId::HOMING)
+  {
+    if (message.length > 0)
+    {
+      auto status = (status_t)make_short(message.data[0], message.data[1]);
+      if (status == E_SUCCESS)
+      {
+        this->gripper_state.homed = true;
+        this->last_received_position_update = ros::Time::now();
+        return;
+      }
+    }
+  }
+
+
+  double time_diff = (ros::Time::now().toSec() - this->last_received_position_update.toSec()) * 1000;
+  if ((time_diff > this->position_update_interval_ms) && this->gripper_state.grasping_state != wsg_50_common::Status::POSITIONING)
+  {
+    if (this->print_position_update_timeout)
+    {
+      ROS_ERROR("Did not receive opening values from gripper within %f ms. This often occurs, when the gripper is not homed.\n", time_diff);
+      this->print_position_update_timeout = false;
+    }
+    this->gripper_state.homed = false;
+  }
+  else
+  {
+    this->print_position_update_timeout = true;
+  }
+}
+
 void GripperCommunication::processMessages(int max_number_of_messages)
 {
   int processed_messages = 0;
@@ -387,6 +428,8 @@ void GripperCommunication::processMessages(int max_number_of_messages)
     {
       callback(nullptr, message);
     }
+
+    checkPositionUpdateTimeout(*message.get());
 
     processed_messages += 1;
     message = this->gripper_socket->getMessage();
