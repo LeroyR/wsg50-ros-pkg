@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>wsg_driver</name>
+  <version>0.0.1</version>
+  <description>The wsg_driver package</description>
+
+  <maintainer email="lruegeme@techfak.uni-bielefeld.de">Leroy Ruegemer</maintainer>
+
+  <license>BSD</license>
+  <author >Nicolas Alt</author>
+  <author >Robotnik</author>
+  <author >Weiss Robotics</author>
+
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>wsg_msgs</depend>
+  <depend>actionlib</depend>
+
+  <export>
+  </export>
+  
+</package>

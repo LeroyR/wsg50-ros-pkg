@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+
+  <node  name="wsg_driver_can"  pkg="wsg_driver" type="wsg_driver_can">
+	<param name="device" type="string" value="/dev/pcan32"/>
+  </node>
+
+</launch>
+

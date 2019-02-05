@@ -1,11 +1,5 @@
-# ROS package for Schunk WSG-50 Gripper
-Forked from: [https://code.google.com/p/wsg50-ros-pkg](https://code.google.com/p/wsg50-ros-pkg)
-
-Modifications of this repository:
-Reading back state with high rates, open-loop control via topics, catkinized, modifications for hydro.
-Existing features are not discussed here - see original Wiki: [https://code.google.com/p/wsg50-ros-pkg/wiki/wsg_50](https://code.google.com/p/wsg50-ros-pkg/wiki/wsg_50)
-
-Todo: Restructure code
+# ROS package for Schunk WSG Gripper
+Based on : [https://github.com/Xamla/wsg50-ros-pkg](https://github.com/Xamla/wsg50-ros-pkg)
 
 
 ## Node wsg\_50\_ip (was: wsg\_50_tcp)
@@ -20,8 +14,6 @@ Todo: Restructure code
 * *grasping_force*: Set grasping force limit on startup
 
 
-### Services
-See [https://code.google.com/p/wsg50-ros-pkg/wiki/wsg_50](https://code.google.com/p/wsg50-ros-pkg/wiki/wsg_50). Services currently block the reception of state updates.
 
 ### Topics
 * *~/goal\_position [IN, wsg_msgs/Cmd]*, in modes script, auto_update:<br/>
