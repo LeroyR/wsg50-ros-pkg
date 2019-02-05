@@ -395,7 +395,7 @@ void GripperCommunication::checkPositionUpdateTimeout(Message& message)
 
   double time_diff = (ros::Time::now().toSec() - this->last_received_position_update.toSec()) * 1000;
   if ((time_diff > this->position_update_interval_ms) &&
-      this->gripper_state.grasping_state != wsg_50_common::Status::POSITIONING)
+      this->gripper_state.grasping_state != wsg_msgs::Status::POSITIONING)
   {
     if (this->print_position_update_timeout)
     {
@@ -525,7 +525,7 @@ void GripperCommunication::graspingStateCallback(Message& message)
       this->last_received_update = ros::Time::now();
       this->gripper_state.grasping_state = message.data[2];
       if (this->is_gripper_error_state_overwritten &&
-          this->gripper_state.grasping_state == wsg_50_common::Status::ERROR)
+          this->gripper_state.grasping_state == wsg_msgs::Status::ERROR)
       {
         this->gripper_state.grasping_state = this->alternative_gripper_error_state;
       }

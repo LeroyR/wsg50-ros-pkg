@@ -49,11 +49,11 @@
 /// ROS
 #include <ros/ros.h>
 #include "std_msgs/String.h"
-#include "wsg_50_common/Status.h"
-#include "wsg_50_common/Move.h"
+#include "wsg_msgs/Status.h"
+#include "wsg_msgs/Move.h"
 #include "std_srvs/Empty.h"
-#include "wsg_50_common/Conf.h"
-#include "wsg_50_common/Incr.h"
+#include "wsg_msgs/Conf.h"
+#include "wsg_msgs/Incr.h"
 
 //------------------------------------------------------------------------
 // Local macros
@@ -85,7 +85,7 @@ bool objectGraspped;
 // Function implementation
 //------------------------------------------------------------------------
 
-bool moveSrv(wsg_50_common::Move::Request& req, wsg_50_common::Move::Response& res)
+bool moveSrv(wsg_msgs::Move::Request& req, wsg_msgs::Move::Response& res)
 {
   if ((req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0))
   {
@@ -108,7 +108,7 @@ bool moveSrv(wsg_50_common::Move::Request& req, wsg_50_common::Move::Response& r
   return true;
 }
 
-bool graspSrv(wsg_50_common::Move::Request& req, wsg_50_common::Move::Response& res)
+bool graspSrv(wsg_msgs::Move::Request& req, wsg_msgs::Move::Response& res)
 {
   if ((req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0))
   {
@@ -133,7 +133,7 @@ bool graspSrv(wsg_50_common::Move::Request& req, wsg_50_common::Move::Response& 
   return true;
 }
 
-bool incrementSrv(wsg_50_common::Incr::Request& req, wsg_50_common::Incr::Response& res)
+bool incrementSrv(wsg_msgs::Incr::Request& req, wsg_msgs::Incr::Response& res)
 {
   if (req.direction == "open")
   {
@@ -184,7 +184,7 @@ bool incrementSrv(wsg_50_common::Incr::Request& req, wsg_50_common::Incr::Respon
   }
 }
 
-bool releaseSrv(wsg_50_common::Move::Request& req, wsg_50_common::Move::Response& res)
+bool releaseSrv(wsg_msgs::Move::Request& req, wsg_msgs::Move::Response& res)
 {
   if ((req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0))
   {
@@ -223,13 +223,13 @@ bool stopSrv(std_srvs::Empty::Request &req, std_srvs::Empty::Request &res)
   return true;
 }
 */
-bool setAccSrv(wsg_50_common::Conf::Request& req, wsg_50_common::Conf::Response& res)
+bool setAccSrv(wsg_msgs::Conf::Request& req, wsg_msgs::Conf::Response& res)
 {
   setAcceleration(req.val);
   return true;
 }
 
-bool setForceSrv(wsg_50_common::Conf::Request& req, wsg_50_common::Conf::Response& res)
+bool setForceSrv(wsg_msgs::Conf::Request& req, wsg_msgs::Conf::Response& res)
 {
   setGraspingForceLimit(req.val);
   return true;
@@ -275,7 +275,7 @@ int main(int argc, char** argv)
     ros::ServiceServer setForceSS = nh.advertiseService("set_force", setForceSrv);
 
     // Publisher
-    ros::Publisher state_pub = nh.advertise<wsg_50_common::Status>("status", 1000);
+    ros::Publisher state_pub = nh.advertise<wsg_msgs::Status>("status", 1000);
 
     ROS_INFO("Ready to use.");
 
@@ -288,7 +288,7 @@ int main(int argc, char** argv)
       // Loop waiting for orders and updating the state
 
       // Create the msg to send
-      wsg_50_common::Status status_msg;
+      wsg_msgs::Status status_msg;
 
       // Get state values
       // const char * aux;

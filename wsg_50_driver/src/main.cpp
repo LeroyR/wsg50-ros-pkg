@@ -52,9 +52,9 @@
 #include <ros/ros.h>
 #include "std_msgs/String.h"
 #include "std_srvs/Empty.h"
-#include "wsg_50_common/Status.h"
-#include "wsg_50_common/SetValue.h"
-#include "wsg_50_common/GetGripperStatus.h"
+#include "wsg_msgs/Status.h"
+#include "wsg_msgs/SetValue.h"
+#include "wsg_msgs/GetGripperStatus.h"
 
 #include "sensor_msgs/JointState.h"
 #include "std_msgs/Float32.h"
@@ -80,7 +80,7 @@ bool objectGraspped;
 int g_timer_cnt = 0;
 ros::Publisher g_pub_state, g_pub_joint, g_pub_moving, g_pub_heartbeat;
 float g_goal_position = NAN, g_goal_speed = NAN, g_speed = 10.0;
-wsg_50_common::Status status_message;
+wsg_msgs::Status status_message;
 NodeState node_state;
 GripperActionServer* action_server = nullptr;
 GripperStandardActionServer* action_standard_server = nullptr;
@@ -172,7 +172,7 @@ bool fastStopSrv(std_srvs::Empty::Request& req, std_srvs::Empty::Request& res)
   return true;
 }
 
-bool setAccSrv(wsg_50_common::SetValue::Request& req, wsg_50_common::SetValue::Response& res)
+bool setAccSrv(wsg_msgs::SetValue::Request& req, wsg_msgs::SetValue::Response& res)
 {
   try
   {
@@ -189,7 +189,7 @@ bool setAccSrv(wsg_50_common::SetValue::Request& req, wsg_50_common::SetValue::R
   return true;
 }
 
-bool setForceSrv(wsg_50_common::SetValue::Request& req, wsg_50_common::SetValue::Response& res)
+bool setForceSrv(wsg_msgs::SetValue::Request& req, wsg_msgs::SetValue::Response& res)
 {
   try
   {
@@ -205,10 +205,10 @@ bool setForceSrv(wsg_50_common::SetValue::Request& req, wsg_50_common::SetValue:
   return true;
 }
 
-bool getGripperStatusService(wsg_50_common::GetGripperStatus::Request& req,
-                             wsg_50_common::GetGripperStatus::Response& res)
+bool getGripperStatusService(wsg_msgs::GetGripperStatus::Request& req,
+                             wsg_msgs::GetGripperStatus::Response& res)
 {
-  wsg_50_common::Status status;
+  wsg_msgs::Status status;
   auto gripperState = gripperCom->getState();
   status.grasping_state_id = gripperState.grasping_state;
   status.width = gripperState.width / 1000;
@@ -294,7 +294,7 @@ void timer_cb(const ros::TimerEvent& ev)
    return;
 
    // ==== Status msg ====
-   wsg_50_common::Status status_msg;
+   wsg_msgs::Status status_msg;
    status_msg.grasping_state = info.state_text;
    status_msg.width = info.position;
    status_msg.speed = info.speed;
@@ -342,8 +342,8 @@ void read_thread(int interval_ms)
    std::string names[3] = { "opening", "speed", "force" };
 
    // Prepare messages
-   wsg_50_common::Status status_msg;
-   status_msg.grasping_state_id = wsg_50_common::Status::UNKNOWN;
+   wsg_msgs::Status status_msg;
+   status_msg.grasping_state_id = wsg_msgs::Status::UNKNOWN;
    status_msg.grasping_state = "UNKNOWN";
 
    sensor_msgs::JointState joint_states;
@@ -552,8 +552,8 @@ void loop_cb(const ros::TimerEvent& ev)
       action_standard_server->doWork();
 
       // heartbeat_msg.header.stamp = ros::Time::now();
-      if ((gripperState.grasping_state == wsg_50_common::Status::UNKNOWN) ||
-          (gripperState.grasping_state == wsg_50_common::Status::ERROR) ||
+      if ((gripperState.grasping_state == wsg_msgs::Status::UNKNOWN) ||
+          (gripperState.grasping_state == wsg_msgs::Status::ERROR) ||
           (gripperState.connection_state != ConnectionState::CONNECTED))
       {
         //  heartbeat_msg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::INTERNAL_ERROR);
@@ -727,7 +727,7 @@ int main(int argc, char** argv)
     joint_states.effort.resize(1);
 
     // Open publishers
-    g_pub_state = nh.advertise<wsg_50_common::Status>(controller_name + "/status", 1000);
+    g_pub_state = nh.advertise<wsg_msgs::Status>(controller_name + "/status", 1000);
     g_pub_joint = nh.advertise<sensor_msgs::JointState>("/joint_states", 10);
     // g_pub_heartbeat = nh.advertise<xamla_sysmon_msgs::HeartBeat>(controller_name + "/heartbeat", 1);
 
@@ -779,7 +779,7 @@ int main(int argc, char** argv)
       printf("%s\n", re.what());
     }
 
-    status_message.grasping_state_id = wsg_50_common::Status::UNKNOWN;
+    status_message.grasping_state_id = wsg_msgs::Status::UNKNOWN;
     g_pub_state.publish(status_message);
 
     action_server->shutdown();
@@ -876,7 +876,7 @@ int main(int argc, char** argv)
  sub_speed = nh.subscribe("goal_speed", 5, speed_cb);
 
  // Publisher
- g_pub_state = nh.advertise<wsg_50_common::Status>("status", 1000);
+ g_pub_state = nh.advertise<wsg_msgs::Status>("status", 1000);
  g_pub_joint = nh.advertise<sensor_msgs::JointState>("/joint_states", 10);
  if (g_mode_script || g_mode_periodic)
  g_pub_moving = nh.advertise<std_msgs::Bool>("moving", 10);

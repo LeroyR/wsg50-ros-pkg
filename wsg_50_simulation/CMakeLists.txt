@@ -9,13 +9,13 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   std_srvs
   urdf
-  wsg_50_common
+  wsg_msgs
 )
 
 catkin_package(
 #   INCLUDE_DIRS include
 #  LIBRARIES vh_pixelmap
-  CATKIN_DEPENDS roscpp urdf std_msgs std_srvs wsg_50_common
+  CATKIN_DEPENDS roscpp urdf std_msgs std_srvs wsg_msgs
 #  DEPENDS system_lib
 )
 
@@ -28,8 +28,8 @@ include_directories(
 
 add_executable(wsg_50_sim_keyboard_teleop src/wsg_50_keyboard_teleop.cpp)
 target_link_libraries(wsg_50_sim_keyboard_teleop ${catkin_LIBRARIES})
-add_dependencies(wsg_50_sim_keyboard_teleop wsg_50_common_generate_messages_cpp)
+add_dependencies(wsg_50_sim_keyboard_teleop wsg_msgs_generate_messages_cpp)
 
 add_executable(wsg_50_sim_driver src/wsg_50_sim_driver.cpp)
 target_link_libraries(wsg_50_sim_driver ${catkin_LIBRARIES})
-add_dependencies(wsg_50_sim_driver wsg_50_common_generate_messages_cpp)
+add_dependencies(wsg_50_sim_driver wsg_msgs_generate_messages_cpp)

@@ -58,7 +58,7 @@ void move(double width)
   currentOpenning = width;
 }
 
-/*bool moveSrv(wsg_50_common::Move::Request &req, wsg_50_common::Move::Response &res)
+/*bool moveSrv(wsg_msgs::Move::Request &req, wsg_msgs::Move::Response &res)
 {
   if ( req.width >= 0.0 && req.width <= 110.0 ){
       ROS_INFO("Moving to %f position.", req.width);
@@ -73,7 +73,7 @@ void move(double width)
     return true;
 }
 
-bool moveIncrementallySrv(wsg_50_common::Incr::Request &req, wsg_50_common::Incr::Response &res)
+bool moveIncrementallySrv(wsg_msgs::Incr::Request &req, wsg_msgs::Incr::Response &res)
 {
 
   if (req.direction == "open"){

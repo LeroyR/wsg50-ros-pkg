@@ -3,7 +3,7 @@
 
 #include <ros/ros.h>
 #include <wsg_50/gripper_socket.h>
-#include "wsg_50_common/Status.h"
+#include "wsg_msgs/Status.h"
 #include "msg.h"
 #include "common.h"
 #include <map>
@@ -76,23 +76,23 @@ public:
   {
     switch (this->grasping_state)
     {
-      case (wsg_50_common::Status::IDLE):
+      case (wsg_msgs::Status::IDLE):
         return "IDLE";
-      case (wsg_50_common::Status::GRASPING):
+      case (wsg_msgs::Status::GRASPING):
         return "GRASPING";
-      case (wsg_50_common::Status::NO_PART_FOUND):
+      case (wsg_msgs::Status::NO_PART_FOUND):
         return "NO_PART_FOUND";
-      case (wsg_50_common::Status::PART_LOST):
+      case (wsg_msgs::Status::PART_LOST):
         return "PART_LOST";
-      case (wsg_50_common::Status::HOLDING):
+      case (wsg_msgs::Status::HOLDING):
         return "HOLDING";
-      case (wsg_50_common::Status::RELEASING):
+      case (wsg_msgs::Status::RELEASING):
         return "RELEASING";
-      case (wsg_50_common::Status::POSITIONING):
+      case (wsg_msgs::Status::POSITIONING):
         return "POSITIONING";
-      case (wsg_50_common::Status::ERROR):
+      case (wsg_msgs::Status::ERROR):
         return "ERROR";
-      case (wsg_50_common::Status::UNKNOWN):
+      case (wsg_msgs::Status::UNKNOWN):
         return "UNKNOWN";
     }
   }
@@ -193,7 +193,7 @@ public:
   // gripper
   // does not report error states, otherwise our monitoring system might pick the error state up which might interfere
   // with the program execution
-  void setOverrideForGripperErrorState(bool active, int32_t alternative_state = wsg_50_common::Status::IDLE);
+  void setOverrideForGripperErrorState(bool active, int32_t alternative_state = wsg_msgs::Status::IDLE);
 
   GripperState getState();
 

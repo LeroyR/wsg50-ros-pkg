@@ -8,14 +8,14 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   std_srvs
-  wsg_50_common
+  wsg_msgs
   actionlib
 )
 
 catkin_package(
 #   INCLUDE_DIRS include
 #  LIBRARIES vh_pixelmap
-  CATKIN_DEPENDS roscpp std_msgs std_srvs wsg_50_common
+  CATKIN_DEPENDS roscpp std_msgs std_srvs wsg_msgs
 #  DEPENDS system_lib
 )
 
@@ -69,7 +69,7 @@ endif()
 
 add_executable(wsg_50_ip src/main.cpp ${DRIVER_SOURCES})
 target_link_libraries(wsg_50_ip ${catkin_LIBRARIES})
-add_dependencies(wsg_50_ip wsg_50_common_generate_messages_cpp)
+add_dependencies(wsg_50_ip wsg_msgs_generate_messages_cpp)
 
 #add_executable(wsg_50_can src/main_can.cpp src/checksum.cpp src/msg.c src/common.cpp src/functions_can.cpp)
 #add_executable(wsg_50_can src/main_can.cpp ${DRIVER_SOURCES_CAN})

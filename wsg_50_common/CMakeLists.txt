@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(wsg_50_common)
+project(wsg_msgs)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -70,7 +70,7 @@ generate_messages(DEPENDENCIES std_msgs actionlib_msgs)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES wsg_50_common
+#  LIBRARIES wsg_msgs
   CATKIN_DEPENDS message_runtime std_msgs
 #  DEPENDS system_lib
 )
@@ -87,19 +87,19 @@ include_directories(
 )
 
 ## Declare a cpp library
-# add_library(wsg_50_common
-#   src/${PROJECT_NAME}/wsg_50_common.cpp
+# add_library(wsg_msgs
+#   src/${PROJECT_NAME}/wsg_msgs.cpp
 # )
 
 ## Declare a cpp executable
-# add_executable(wsg_50_common_node src/wsg_50_common_node.cpp)
+# add_executable(wsg_msgs_node src/wsg_msgs_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(wsg_50_common_node wsg_50_common_generate_messages_cpp)
+# add_dependencies(wsg_msgs_node wsg_msgs_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(wsg_50_common_node
+# target_link_libraries(wsg_msgs_node
 #   ${catkin_LIBRARIES}
 # )
 
@@ -118,7 +118,7 @@ include_directories(
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS wsg_50_common wsg_50_common_node
+# install(TARGETS wsg_msgs wsg_msgs_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -143,7 +143,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_wsg_50_common.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_wsg_msgs.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

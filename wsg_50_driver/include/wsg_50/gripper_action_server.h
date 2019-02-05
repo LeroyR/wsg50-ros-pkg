@@ -6,10 +6,10 @@
 #include "wsg_50/gripper_communication.h"
 #include "wsg_50/gripper_socket.h"
 #include "wsg_50/node_state.h"
-#include "wsg_50_common/CommandAction.h"
+#include "wsg_msgs/CommandAction.h"
 #include <queue>
 
-typedef actionlib::ActionServer<wsg_50_common::CommandAction> ActionServer;
+typedef actionlib::ActionServer<wsg_msgs::CommandAction> ActionServer;
 typedef ActionServer::GoalHandle GoalHandle;
 
 enum class ActionStateCode : uint32_t
@@ -52,13 +52,13 @@ private:
 
   void goalCallback(GoalHandle goal_handle);
   void cancelCallback(GoalHandle goal_handle);
-  void handleCommand(wsg_50_common::Command command, GoalHandle& goal_handle);
+  void handleCommand(wsg_msgs::Command command, GoalHandle& goal_handle);
 
   void abort(std::string message_text);
   void commandCallback(std::shared_ptr<CommandError> error, std::shared_ptr<Message> message);
   void stopCallback(Message& message);
 
-  wsg_50_common::Status fillStatus();
+  wsg_msgs::Status fillStatus();
   ActionState action_state;
   void graspingStateCallback(Message& message);
 };
