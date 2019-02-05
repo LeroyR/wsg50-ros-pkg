@@ -42,7 +42,7 @@
 #define KEYCODE_A 0x61
 #define KEYCODE_D 0x64
 #define KEYCODE_S 0x73
-#define KEYCODE_W 0x77 
+#define KEYCODE_W 0x77
 #define KEYCODE_Q 0x71
 #define KEYCODE_E 0x65
 #define KEYCODE_SPACEBAR 0x49
@@ -50,19 +50,18 @@
 #define MAX_GRIPPER_OPEN 0.056
 #define MIN_GRIPPER_OPEN 0.0
 
-
 class Wsg50Teleop
 {
-  private:
+private:
   double open_increment, close_increment, grasp_increment, force;
   std_msgs::Float64 cmd;
 
   ros::NodeHandle n_;
   ros::Publisher vel_pub_r_, vel_pub_l_;
 
-  public:
+public:
   void init()
-  { 
+  {
     cmd.data = 0;
 
     vel_pub_r_ = n_.advertise<std_msgs::Float64>("/wsg_50_gr/command", 1);
@@ -71,10 +70,11 @@ class Wsg50Teleop
     ros::NodeHandle n_private("~");
     n_private.param("open_increment", open_increment, 0.001);
   }
-  
-  ~Wsg50Teleop()   { }
-  void keyboardLoop();
 
+  ~Wsg50Teleop()
+  {
+  }
+  void keyboardLoop();
 };
 
 int kfd = 0;
@@ -94,23 +94,23 @@ int main(int argc, char** argv)
   Wsg50Teleop tpk;
   tpk.init();
 
-  signal(SIGINT,quit);
+  signal(SIGINT, quit);
 
   tpk.keyboardLoop();
 
-  return(0);
+  return (0);
 }
 
 void Wsg50Teleop::keyboardLoop()
 {
   char c;
-  bool dirty=false;
+  bool dirty = false;
   currentPos = 0.0;
 
   // get the console in raw mode
   tcgetattr(kfd, &cooked);
   memcpy(&raw, &cooked, sizeof(struct termios));
-  raw.c_lflag &=~ (ICANON | ECHO);
+  raw.c_lflag &= ~(ICANON | ECHO);
   // Setting a new line, then end of file
   raw.c_cc[VEOL] = 1;
   raw.c_cc[VEOF] = 2;
@@ -121,42 +121,41 @@ void Wsg50Teleop::keyboardLoop()
   puts("Use 'W' to oppen the gripper");
   puts("Use 'S' to close the gripper");
 
-  for(;;)
+  for (;;)
   {
     // get the next event from the keyboard
-    if(read(kfd, &c, 1) < 0)
+    if (read(kfd, &c, 1) < 0)
     {
       perror("read():");
       exit(-1);
     }
     cmd.data = currentPos;
 
-    switch(c)
+    switch (c)
     {
-
-    case KEYCODE_W: // Open gripper
-      if (currentPos < MAX_GRIPPER_OPEN){
-      	currentPos = currentPos + open_increment;
-      	cmd.data = currentPos;
-      	dirty = true;
-      	break;
-      }
-    case KEYCODE_S: // Close gripper
-      if (currentPos > MIN_GRIPPER_OPEN){
-	currentPos = currentPos - open_increment;
-	cmd.data = currentPos;
-	dirty = true;
-        break;
-      }
+      case KEYCODE_W:  // Open gripper
+        if (currentPos < MAX_GRIPPER_OPEN)
+        {
+          currentPos = currentPos + open_increment;
+          cmd.data = currentPos;
+          dirty = true;
+          break;
+        }
+      case KEYCODE_S:  // Close gripper
+        if (currentPos > MIN_GRIPPER_OPEN)
+        {
+          currentPos = currentPos - open_increment;
+          cmd.data = currentPos;
+          dirty = true;
+          break;
+        }
     }
-    
+
     if (dirty == true)
     {
       vel_pub_r_.publish(cmd);
-      cmd.data = cmd.data * -1.0; // Adapt for the left gripper
+      cmd.data = cmd.data * -1.0;  // Adapt for the left gripper
       vel_pub_l_.publish(cmd);
     }
-
-
   }
 }

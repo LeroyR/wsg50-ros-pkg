@@ -69,7 +69,7 @@ public:
     this->system_state = -1;
     this->connection_state = ConnectionState::NOT_CONNECTED;
     this->initialized = false;
-    this->homed = true; // Is set to false if we did not receive a position value update within a short timeout.
+    this->homed = true;  // Is set to false if we did not receive a position value update within a short timeout.
   }
 
   std::string getGraspStateText()
@@ -154,14 +154,16 @@ enum class CommandStateCode : unsigned char
 class GripperCommunication final
 {
 public:
-  GripperCommunication(std::string host, int port, int auto_update_interval_ms = 50, int command_timeout_ms = 10000, int reconnect_timeout_ms = 150);
+  GripperCommunication(std::string host, int port, int auto_update_interval_ms = 50, int command_timeout_ms = 10000,
+                       int reconnect_timeout_ms = 150);
   ~GripperCommunication()
   {
   }
 
   void sendCommand(Message& message, GripperCallback callback = nullptr, int timeout_in_ms = 0);
   void sendCommandSynchronous(Message& message, GripperCallback callback = nullptr, int timeout_in_ms = 1000);
-  void awaitUpdateForMessage(unsigned char messageId, GripperCallback callback = nullptr, uint32_t amount = 1, int timeout_in_ms = 1000);
+  void awaitUpdateForMessage(unsigned char messageId, GripperCallback callback = nullptr, uint32_t amount = 1,
+                             int timeout_in_ms = 1000);
   CommandSubscription subscribe(unsigned char messageId, GripperCallback callback);
   void unregisterListener(unsigned char messageId, int listenerId);
   bool acceptsCommands(std::string& reason);
@@ -187,8 +189,10 @@ public:
   void disconnectFromGripper(bool announceDisconnect);
   void valueUpdateCallback(std::shared_ptr<CommandError> error, std::shared_ptr<Message> message);
   void shutdown();
-  // in the special case that pre-postition (move) is used to pick parts with an unkown width, it is needed that the gripper
-  // does not report error states, otherwise our monitoring system might pick the error state up which might interfere with the program execution
+  // in the special case that pre-postition (move) is used to pick parts with an unkown width, it is needed that the
+  // gripper
+  // does not report error states, otherwise our monitoring system might pick the error state up which might interfere
+  // with the program execution
   void setOverrideForGripperErrorState(bool active, int32_t alternative_state = wsg_50_common::Status::IDLE);
 
   GripperState getState();

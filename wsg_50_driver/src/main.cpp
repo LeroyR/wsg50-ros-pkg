@@ -540,7 +540,7 @@ void loop_cb(const ros::TimerEvent& ev)
     ROS_ERROR("An error occured while trying to receive messages: %s", ex.what());
   }
 
-  //xamla_sysmon_msgs::HeartBeat heartbeat_msg;
+  // xamla_sysmon_msgs::HeartBeat heartbeat_msg;
 
   auto gripperState = gripperCom->getState();
 
@@ -551,23 +551,23 @@ void loop_cb(const ros::TimerEvent& ev)
       action_server->doWork();
       action_standard_server->doWork();
 
-     // heartbeat_msg.header.stamp = ros::Time::now();
+      // heartbeat_msg.header.stamp = ros::Time::now();
       if ((gripperState.grasping_state == wsg_50_common::Status::UNKNOWN) ||
           (gripperState.grasping_state == wsg_50_common::Status::ERROR) ||
           (gripperState.connection_state != ConnectionState::CONNECTED))
       {
-      //  heartbeat_msg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::INTERNAL_ERROR);
-      //  heartbeat_msg.details = "Gripper is in unknown or error state.";
+        //  heartbeat_msg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::INTERNAL_ERROR);
+        //  heartbeat_msg.details = "Gripper is in unknown or error state.";
       }
       else if (gripperState.homed == false)
       {
-      //  heartbeat_msg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::INTERNAL_ERROR);
-      //  heartbeat_msg.details = "Gripper is not homed.";
+        //  heartbeat_msg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::INTERNAL_ERROR);
+        //  heartbeat_msg.details = "Gripper is not homed.";
       }
       else
       {
-      //  heartbeat_msg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::GO);
-      //  heartbeat_msg.details = "";
+        //  heartbeat_msg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::GO);
+        //  heartbeat_msg.details = "";
       }
 
       break;
@@ -575,8 +575,8 @@ void loop_cb(const ros::TimerEvent& ev)
     default:
     {
       ROS_ERROR("Something went very wrong. This can only be recoverd by restarting the node");
-      //heartbeat_msg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::INTERNAL_ERROR);
-      //heartbeat_msg.details = "Drive is in error state.";
+      // heartbeat_msg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::INTERNAL_ERROR);
+      // heartbeat_msg.details = "Drive is in error state.";
       break;
     }
   }
@@ -600,11 +600,11 @@ void loop_cb(const ros::TimerEvent& ev)
 
     joint_states.header.stamp = ros::Time::now();
     joint_states.position[0] = gripperState.width / 2000.0;
-    //joint_states.position[1] = gripperState.width / 2000.0;
+    // joint_states.position[1] = gripperState.width / 2000.0;
     joint_states.velocity[0] = gripperState.current_speed / 1000.0;
-    //joint_states.velocity[1] = gripperState.current_speed / 1000.0;
+    // joint_states.velocity[1] = gripperState.current_speed / 1000.0;
     joint_states.effort[0] = gripperState.current_force;
-    //joint_states.effort[1] = gripperState.current_force;
+    // joint_states.effort[1] = gripperState.current_force;
     g_pub_joint.publish(joint_states);
 
     last_publish = ros::Time::now();
@@ -721,7 +721,7 @@ int main(int argc, char** argv)
     std::string action_ns = result[1];
     joint_states.header.frame_id = prefix + "_base_link";
     joint_states.name.push_back(result[3]);
-    //joint_states.name.push_back(result[4]);
+    // joint_states.name.push_back(result[4]);
     joint_states.position.resize(1);
     joint_states.velocity.resize(1);
     joint_states.effort.resize(1);
@@ -731,11 +731,11 @@ int main(int argc, char** argv)
     g_pub_joint = nh.advertise<sensor_msgs::JointState>("/joint_states", 10);
     // g_pub_heartbeat = nh.advertise<xamla_sysmon_msgs::HeartBeat>(controller_name + "/heartbeat", 1);
 
-    //xamla_sysmon_msgs::HeartBeat msg;
-    //msg.header.stamp = ros::Time::now();
+    // xamla_sysmon_msgs::HeartBeat msg;
+    // msg.header.stamp = ros::Time::now();
 
-    //msg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::STARTING);
-    //msg.details = TopicHeartbeatStatus::generateMessageText(TopicHeartbeatStatus::intToStatusCode(msg.status));
+    // msg.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::STARTING);
+    // msg.details = TopicHeartbeatStatus::generateMessageText(TopicHeartbeatStatus::intToStatusCode(msg.status));
     // g_pub_heartbeat.publish(msg);
 
     // Services
@@ -750,11 +750,11 @@ int main(int argc, char** argv)
     // Open action server
     action_server = new GripperActionServer(nh, controller_name + "/" + action_ns, *gripperCom, node_state);
     action_server->start();
-    //standard action server
+    // standard action server
     double standard_action_speed;
     nh.param<double>("standard_action_speed", standard_action_speed, 0.015);
-    action_standard_server = new GripperStandardActionServer(nh, controller_name + "/" + "gripper_command"
-                                                             , *gripperCom, node_state, standard_action_speed);
+    action_standard_server = new GripperStandardActionServer(nh, controller_name + "/" + "gripper_command", *gripperCom,
+                                                             node_state, standard_action_speed);
     action_standard_server->start();
 
     try

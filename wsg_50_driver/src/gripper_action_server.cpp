@@ -80,21 +80,31 @@ void GripperActionServer::doWork()
     }
     else
     {
-      if (this->action_state.ignore_axis_blocked && result.status.return_code == E_AXIS_BLOCKED) {
+      if (this->action_state.ignore_axis_blocked && result.status.return_code == E_AXIS_BLOCKED)
+      {
         // special case in that pre-positioning (move) is used as workaround to pickup parts with an unknown width
-        // the gripper goes into an error state even when stop_on_block is false, therefore we acknowledge the error an wait until the reported values are nominal again
-        printf("[GripperActionServer::doWork] received E_AXIS_BLOCKED, but stop_on_block was false -> will acknowledge gripper error\n");
-        try {
+        // the gripper goes into an error state even when stop_on_block is false, therefore we acknowledge the error an
+        // wait until the reported values are nominal again
+        printf("[GripperActionServer::doWork] received E_AXIS_BLOCKED, but stop_on_block was false -> will acknowledge "
+               "gripper error\n");
+        try
+        {
           this->gripper_com.acknowledge_error();
-          // it takes a while for the gripper to report the correct force, therefore we wait until we received three updates of the force values
+          // it takes a while for the gripper to report the correct force, therefore we wait until we received three
+          // updates of the force values
           this->gripper_com.awaitUpdateForMessage((unsigned char)WellKnownMessageId::FORCE_VALUES, nullptr, 3);
           this->gripper_com.awaitUpdateForMessage((unsigned char)WellKnownMessageId::GRIPPING_STATE);
           result.status = this->fillStatus();
           this->current_goal_handle.setSucceeded(result, "Goal reached");
-        } catch (...) {
-          this->current_goal_handle.setAborted(result, "Goal aborted, gripper may have reached its goal, but confirmation requests have timed out.");
         }
-      } else {
+        catch (...)
+        {
+          this->current_goal_handle.setAborted(result, "Goal aborted, gripper may have reached its goal, but "
+                                                       "confirmation requests have timed out.");
+        }
+      }
+      else
+      {
         this->current_goal_handle.setAborted(result, "Goal aborted, command did not return success code");
       }
     }
@@ -133,7 +143,7 @@ void GripperActionServer::goalCallback(GoalHandle goal_handle)
   auto goal = goal_handle.getGoal();
 
   std::string reason_for_rejection = "";
-  if ((this->gripper_com.acceptsCommands(reason_for_rejection) == false) && (goal->command.command_id != 100) )
+  if ((this->gripper_com.acceptsCommands(reason_for_rejection) == false) && (goal->command.command_id != 100))
   {
     wsg_50_common::CommandResult result;
     result.status = this->fillStatus();
@@ -173,19 +183,18 @@ void GripperActionServer::handleCommand(wsg_50_common::Command command, GoalHand
         this->action_state.expected_grasping_state = wsg_50_common::Status::IDLE;
         this->action_state.ignore_axis_blocked = !command.stop_on_block;
         this->gripper_com.set_force(command.force, nullptr, 1000);
-        if (!command.stop_on_block) {
+        if (!command.stop_on_block)
+        {
           this->gripper_com.setOverrideForGripperErrorState(true);
         }
-        //this->gripper_com.move(command.width, command.speed, command.stop_on_block,
+        // this->gripper_com.move(command.width, command.speed, command.stop_on_block,
         //                       [&](std::shared_ptr<CommandError> error, std::shared_ptr<Message> message) {
         //                         this->commandCallback(error, message);
         //                       });
         this->gripper_com.custom_position(command.width, command.speed,
-                               [&](std::shared_ptr<CommandError> error, std::shared_ptr<Message> message) {
-                                 this->commandCallback(error, message);
-                               });
-
-
+                                          [&](std::shared_ptr<CommandError> error, std::shared_ptr<Message> message) {
+                                            this->commandCallback(error, message);
+                                          });
       }
       catch (std::runtime_error& ex)
       {

@@ -31,7 +31,6 @@
  * \brief WSG-50 ROS driver.
  */
 
-
 //------------------------------------------------------------------------
 // Includes
 //------------------------------------------------------------------------
@@ -41,7 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <fcntl.h> 
+#include <fcntl.h>
 
 #include "wsg_50/common.h"
 #include "wsg_50/functions_can.h"
@@ -60,7 +59,6 @@
 // Local macros
 //------------------------------------------------------------------------
 
-
 //------------------------------------------------------------------------
 // Typedefs, enums, structs
 //------------------------------------------------------------------------
@@ -74,241 +72,257 @@
 
 float increment;
 bool objectGraspped;
-   
+
 //------------------------------------------------------------------------
 // Unit testing
 //------------------------------------------------------------------------
-
 
 //------------------------------------------------------------------------
 // Local function prototypes
 //------------------------------------------------------------------------
 
-
 //------------------------------------------------------------------------
 // Function implementation
 //------------------------------------------------------------------------
 
-
-bool moveSrv(wsg_50_common::Move::Request &req, wsg_50_common::Move::Response &res)
+bool moveSrv(wsg_50_common::Move::Request& req, wsg_50_common::Move::Response& res)
 {
-	if ( (req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0) ){
-  		ROS_INFO("Moving to %f position at %f mm/s.", req.width, req.speed);
-		res.error = move(req.width, req.speed);
-	}else if (req.width < 0.0 || req.width > 110.0){
-		ROS_ERROR("Imposible to move to this position. (Width values: [0.0 - 110.0] ");
-		res.error = 255;
-		return false;
-	}else{
-	    ROS_WARN("Speed values are outside the gripper's physical limits ([0.1 - 420.0])  Using clamped values.");
-		res.error = move(req.width, req.speed);
-	}
+  if ((req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0))
+  {
+    ROS_INFO("Moving to %f position at %f mm/s.", req.width, req.speed);
+    res.error = move(req.width, req.speed);
+  }
+  else if (req.width < 0.0 || req.width > 110.0)
+  {
+    ROS_ERROR("Imposible to move to this position. (Width values: [0.0 - 110.0] ");
+    res.error = 255;
+    return false;
+  }
+  else
+  {
+    ROS_WARN("Speed values are outside the gripper's physical limits ([0.1 - 420.0])  Using clamped values.");
+    res.error = move(req.width, req.speed);
+  }
 
-	ROS_INFO("Target position reached.");
-  	return true;
+  ROS_INFO("Target position reached.");
+  return true;
 }
 
-bool graspSrv(wsg_50_common::Move::Request &req, wsg_50_common::Move::Response &res)
+bool graspSrv(wsg_50_common::Move::Request& req, wsg_50_common::Move::Response& res)
 {
-	if ( (req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0) ){
-  		ROS_INFO("Grasping object at %f mm/s.", req.width, req.speed);
-		res.error = grasp(req.width, req.speed);
-	}else if (req.width < 0.0 || req.width > 110.0){
-		ROS_ERROR("Imposible to move to this position. (Width values: [0.0 - 110.0] ");
-		res.error = 255;
-		return false;
-	}else{
-	        ROS_WARN("Speed or position values are outside the gripper's physical limits (Position: [0.0 - 110.0] / Speed: [0.1 - 420.0])  Using clamped values.");
-		res.error = grasp(req.width, req.speed);
-	}
+  if ((req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0))
+  {
+    ROS_INFO("Grasping object at %f mm/s.", req.width, req.speed);
+    res.error = grasp(req.width, req.speed);
+  }
+  else if (req.width < 0.0 || req.width > 110.0)
+  {
+    ROS_ERROR("Imposible to move to this position. (Width values: [0.0 - 110.0] ");
+    res.error = 255;
+    return false;
+  }
+  else
+  {
+    ROS_WARN("Speed or position values are outside the gripper's physical limits (Position: [0.0 - 110.0] / Speed: "
+             "[0.1 - 420.0])  Using clamped values.");
+    res.error = grasp(req.width, req.speed);
+  }
 
-	ROS_INFO("Object grasped correctly.");
-	objectGraspped=true;
-  	return true;
+  ROS_INFO("Object grasped correctly.");
+  objectGraspped = true;
+  return true;
 }
 
-bool incrementSrv(wsg_50_common::Incr::Request &req, wsg_50_common::Incr::Response &res)
+bool incrementSrv(wsg_50_common::Incr::Request& req, wsg_50_common::Incr::Response& res)
 {
-	if (req.direction == "open"){
-	
-		if (!objectGraspped){
-		
-			float currentWidth = getOpening();
-			float nextWidth = currentWidth + req.increment;
-			if ( (currentWidth < GRIPPER_MAX_OPEN) && nextWidth < GRIPPER_MAX_OPEN ){
-				//grasp(nextWidth, 1);
-				move(nextWidth,20);
-				currentWidth = nextWidth;
-			}else if( nextWidth >= GRIPPER_MAX_OPEN){
-				//grasp(GRIPPER_MAX_OPEN, 1);
-				move(GRIPPER_MAX_OPEN,1);
-				currentWidth = GRIPPER_MAX_OPEN;
-			}
-		}else{
-			ROS_INFO("Releasing object...");
-			release(GRIPPER_MAX_OPEN, 20);
-			objectGraspped = false;
-		}
-	}else if (req.direction == "close"){
-	
-		if (!objectGraspped){
+  if (req.direction == "open")
+  {
+    if (!objectGraspped)
+    {
+      float currentWidth = getOpening();
+      float nextWidth = currentWidth + req.increment;
+      if ((currentWidth < GRIPPER_MAX_OPEN) && nextWidth < GRIPPER_MAX_OPEN)
+      {
+        // grasp(nextWidth, 1);
+        move(nextWidth, 20);
+        currentWidth = nextWidth;
+      }
+      else if (nextWidth >= GRIPPER_MAX_OPEN)
+      {
+        // grasp(GRIPPER_MAX_OPEN, 1);
+        move(GRIPPER_MAX_OPEN, 1);
+        currentWidth = GRIPPER_MAX_OPEN;
+      }
+    }
+    else
+    {
+      ROS_INFO("Releasing object...");
+      release(GRIPPER_MAX_OPEN, 20);
+      objectGraspped = false;
+    }
+  }
+  else if (req.direction == "close")
+  {
+    if (!objectGraspped)
+    {
+      float currentWidth = getOpening();
+      float nextWidth = currentWidth - req.increment;
 
-			float currentWidth = getOpening();
-			float nextWidth = currentWidth - req.increment;
-		
-			if ( (currentWidth > GRIPPER_MIN_OPEN) && nextWidth > GRIPPER_MIN_OPEN ){
-				//grasp(nextWidth, 1);
-				move(nextWidth,20);
-				currentWidth = nextWidth;
-			}else if( nextWidth <= GRIPPER_MIN_OPEN){
-				//grasp(GRIPPER_MIN_OPEN, 1);
-				move(GRIPPER_MIN_OPEN,1);
-				currentWidth = GRIPPER_MIN_OPEN;
-			}
-		}
-	}
+      if ((currentWidth > GRIPPER_MIN_OPEN) && nextWidth > GRIPPER_MIN_OPEN)
+      {
+        // grasp(nextWidth, 1);
+        move(nextWidth, 20);
+        currentWidth = nextWidth;
+      }
+      else if (nextWidth <= GRIPPER_MIN_OPEN)
+      {
+        // grasp(GRIPPER_MIN_OPEN, 1);
+        move(GRIPPER_MIN_OPEN, 1);
+        currentWidth = GRIPPER_MIN_OPEN;
+      }
+    }
+  }
 }
 
-bool releaseSrv(wsg_50_common::Move::Request &req, wsg_50_common::Move::Response &res)
+bool releaseSrv(wsg_50_common::Move::Request& req, wsg_50_common::Move::Response& res)
 {
-	if ( (req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0) ){
-  		ROS_INFO("Releasing to %f position at %f mm/s.", req.width, req.speed);
-		res.error = release(req.width, req.speed);
-	}else if (req.width < 0.0 || req.width > 110.0){
-		ROS_ERROR("Imposible to move to this position. (Width values: [0.0 - 110.0] ");
-		res.error = 255;
-		return false;
-	}else{
-	        ROS_WARN("Speed or position values are outside the gripper's physical limits (Position: [0.0 - 110.0] / Speed: [0.1 - 420.0])  Using clamped values.");
-		res.error = release(req.width, req.speed);
-	}
-	ROS_INFO("Object released correctly.");
-  	return true;
+  if ((req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0))
+  {
+    ROS_INFO("Releasing to %f position at %f mm/s.", req.width, req.speed);
+    res.error = release(req.width, req.speed);
+  }
+  else if (req.width < 0.0 || req.width > 110.0)
+  {
+    ROS_ERROR("Imposible to move to this position. (Width values: [0.0 - 110.0] ");
+    res.error = 255;
+    return false;
+  }
+  else
+  {
+    ROS_WARN("Speed or position values are outside the gripper's physical limits (Position: [0.0 - 110.0] / Speed: "
+             "[0.1 - 420.0])  Using clamped values.");
+    res.error = release(req.width, req.speed);
+  }
+  ROS_INFO("Object released correctly.");
+  return true;
 }
 
-bool homingSrv(std_srvs::Empty::Request &req, std_srvs::Empty::Request &res)
+bool homingSrv(std_srvs::Empty::Request& req, std_srvs::Empty::Request& res)
 {
-	ROS_INFO("Homing...");
-	homing();
-	ROS_INFO("Home position reached.");
-	return true;
+  ROS_INFO("Homing...");
+  homing();
+  ROS_INFO("Home position reached.");
+  return true;
 }
 /*
 bool stopSrv(std_srvs::Empty::Request &req, std_srvs::Empty::Request &res)
 {
-	ROS_WARN("Stop!");
-	stop();
-	ROS_WARN("Stopped.");
-	return true;
+  ROS_WARN("Stop!");
+  stop();
+  ROS_WARN("Stopped.");
+  return true;
 }
 */
-bool setAccSrv(wsg_50_common::Conf::Request &req, wsg_50_common::Conf::Response &res)
+bool setAccSrv(wsg_50_common::Conf::Request& req, wsg_50_common::Conf::Response& res)
 {
-	setAcceleration(req.val);
-	return true;
+  setAcceleration(req.val);
+  return true;
 }
 
-bool setForceSrv(wsg_50_common::Conf::Request &req, wsg_50_common::Conf::Response &res)
+bool setForceSrv(wsg_50_common::Conf::Request& req, wsg_50_common::Conf::Response& res)
 {
-	setGraspingForceLimit(req.val);
-	return true;
+  setGraspingForceLimit(req.val);
+  return true;
 }
 /*
 bool ackSrv(std_srvs::Empty::Request &req, std_srvs::Empty::Request &res)
 {
-	ack_fault();
-	return true;
+  ack_fault();
+  return true;
 }
 */
-
 
 /**
  * The main function
  */
 
-int main( int argc, char **argv )
+int main(int argc, char** argv)
 {
-   ros::init(argc, argv, "wsg_50_can");
+  ros::init(argc, argv, "wsg_50_can");
 
-   ros::NodeHandle nh("~");
-   std::string device_;
-   nh.param("device", device_, device_);
-   
-   ROS_INFO("WSG 50 - CAN ROS NODE");
+  ros::NodeHandle nh("~");
+  std::string device_;
+  nh.param("device", device_, device_);
 
-   // Connect to device using CAN
-   if( CAN_connect( device_.c_str() ) )
-   {
+  ROS_INFO("WSG 50 - CAN ROS NODE");
 
-	// Services
-	
-  	ros::ServiceServer moveSS = nh.advertiseService("move", moveSrv);
-  	ros::ServiceServer graspSS = nh.advertiseService("grasp", graspSrv);
-  	ros::ServiceServer releaseSS = nh.advertiseService("release", releaseSrv); 
-  	ros::ServiceServer homingSS = nh.advertiseService("homing", homingSrv);
-  	
-  	//ros::ServiceServer stopSS = nh.advertiseService("stop", stopSrv);
-  	//ros::ServiceServer ackSS = nh.advertiseService("ack", ackSrv);
-	
-	ros::ServiceServer incrementSS = nh.advertiseService("move_incrementally", incrementSrv);
+  // Connect to device using CAN
+  if (CAN_connect(device_.c_str()))
+  {
+    // Services
 
-	ros::ServiceServer setAccSS = nh.advertiseService("set_acceleration", setAccSrv);
-	ros::ServiceServer setForceSS = nh.advertiseService("set_force", setForceSrv);
-	
-	// Publisher
-  	ros::Publisher state_pub = nh.advertise<wsg_50_common::Status>("status", 1000);
+    ros::ServiceServer moveSS = nh.advertiseService("move", moveSrv);
+    ros::ServiceServer graspSS = nh.advertiseService("grasp", graspSrv);
+    ros::ServiceServer releaseSS = nh.advertiseService("release", releaseSrv);
+    ros::ServiceServer homingSS = nh.advertiseService("homing", homingSrv);
 
-	ROS_INFO("Ready to use.");
+    // ros::ServiceServer stopSS = nh.advertiseService("stop", stopSrv);
+    // ros::ServiceServer ackSS = nh.advertiseService("ack", ackSrv);
 
-	homing();
+    ros::ServiceServer incrementSS = nh.advertiseService("move_incrementally", incrementSrv);
 
-	ros::Rate loop_rate(10); // loop at 10Hz
+    ros::ServiceServer setAccSS = nh.advertiseService("set_acceleration", setAccSrv);
+    ros::ServiceServer setForceSS = nh.advertiseService("set_force", setForceSrv);
 
-	while( ros::ok() ){
-		
-		//Loop waiting for orders and updating the state
-		
-		//Create the msg to send
-		wsg_50_common::Status status_msg;		
+    // Publisher
+    ros::Publisher state_pub = nh.advertise<wsg_50_common::Status>("status", 1000);
 
-		//Get state values
-		//const char * aux;
-		//aux = systemState();
-		int op = getOpening();
-		///int acc = getAcceleration();
-		///int force = getGraspingForceLimit();
+    ROS_INFO("Ready to use.");
 
-    	//std::stringstream ss;
-		
-		//ss << aux;
+    homing();
 
-		//status_msg.status = ss.str();
-		status_msg.width = op;
-		///status_msg.acc = acc;
-		///status_msg.force = force;
+    ros::Rate loop_rate(10);  // loop at 10Hz
 
-		state_pub.publish(status_msg);
-		
-		loop_rate.sleep();
-		ros::spinOnce();
-		
-	}
-	
+    while (ros::ok())
+    {
+      // Loop waiting for orders and updating the state
 
-   }else{
+      // Create the msg to send
+      wsg_50_common::Status status_msg;
 
-		ROS_ERROR("Unable to connect via CAN, please check the velocity and node gripper configuration.");
-	
-   }
+      // Get state values
+      // const char * aux;
+      // aux = systemState();
+      int op = getOpening();
+      /// int acc = getAcceleration();
+      /// int force = getGraspingForceLimit();
 
-   // Disconnect - won't be executed atm. as the endless loop in test()
-   // will never return.
-  	CAN_disconnect();
+      // std::stringstream ss;
 
-   return 0;
+      // ss << aux;
 
+      // status_msg.status = ss.str();
+      status_msg.width = op;
+      /// status_msg.acc = acc;
+      /// status_msg.force = force;
+
+      state_pub.publish(status_msg);
+
+      loop_rate.sleep();
+      ros::spinOnce();
+    }
+  }
+  else
+  {
+    ROS_ERROR("Unable to connect via CAN, please check the velocity and node gripper configuration.");
+  }
+
+  // Disconnect - won't be executed atm. as the endless loop in test()
+  // will never return.
+  CAN_disconnect();
+
+  return 0;
 }
-
 
 //------------------------------------------------------------------------
 // Testing functions

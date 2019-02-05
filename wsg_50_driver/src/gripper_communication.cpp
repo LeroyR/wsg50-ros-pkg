@@ -2,17 +2,14 @@
 #include "wsg_50/functions.h"
 
 GripperCommunication::GripperCommunication(std::string host, int port, int auto_update_interval_ms,
-                                          int command_timeout_ms, int reconnect_timeout_ms)
+                                           int command_timeout_ms, int reconnect_timeout_ms)
 {
   gripper_socket = new GripperSocket(host, port);
   gripper_socket->setConnectionStateChangedCallback(
-    [&](ConnectionState& new_connection_state)
-    {
-      this->connectionStateChangedCallback(new_connection_state);
-    }
-  );
+      [&](ConnectionState& new_connection_state) { this->connectionStateChangedCallback(new_connection_state); });
 
-  ROS_INFO("Starting with update interval: %d ms, reconnection delay: %d ms", auto_update_interval_ms, reconnect_timeout_ms);
+  ROS_INFO("Starting with update interval: %d ms, reconnection delay: %d ms", auto_update_interval_ms,
+           reconnect_timeout_ms);
   this->currentCommand = nullptr;
   this->command_timeout_ms = command_timeout_ms;
   this->auto_update_interval_ms = auto_update_interval_ms;
@@ -55,48 +52,48 @@ void GripperCommunication::activateAutomaticValueUpdates()
 
   ROS_INFO("Request updates for grip state");
   auto subscription = this->subscribe((unsigned char)WellKnownMessageId::GRIPPING_STATE,
-                                     [&](std::shared_ptr<CommandError> error, std::shared_ptr<Message> message) {
-                                       if ((error == nullptr) && (message != nullptr))
-                                       {
-                                         this->graspingStateCallback(*message.get());
-                                       }
-                                     });
+                                      [&](std::shared_ptr<CommandError> error, std::shared_ptr<Message> message) {
+                                        if ((error == nullptr) && (message != nullptr))
+                                        {
+                                          this->graspingStateCallback(*message.get());
+                                        }
+                                      });
   this->activateAutoUpdates((unsigned char)WellKnownMessageId::GRIPPING_STATE, interval_ms);
   this->subscriptions.push_back(subscription);
   std::this_thread::sleep_for(timespan);
 
   ROS_INFO("Request updates for opening values");
   subscription = this->subscribe((unsigned char)WellKnownMessageId::OPENING_VALUES,
-                  [&](std::shared_ptr<CommandError> error, std::shared_ptr<Message> message) {
-                    if ((error == nullptr) && (message != nullptr))
-                    {
-                      this->widthCallback(*message.get());
-                    }
-                  });
+                                 [&](std::shared_ptr<CommandError> error, std::shared_ptr<Message> message) {
+                                   if ((error == nullptr) && (message != nullptr))
+                                   {
+                                     this->widthCallback(*message.get());
+                                   }
+                                 });
   this->activateAutoUpdates((unsigned char)WellKnownMessageId::OPENING_VALUES, interval_ms + 2);
   this->subscriptions.push_back(subscription);
   std::this_thread::sleep_for(timespan);
 
   ROS_INFO("Request updates for force values");
   subscription = this->subscribe((unsigned char)WellKnownMessageId::FORCE_VALUES,
-                  [&](std::shared_ptr<CommandError> error, std::shared_ptr<Message> message) {
-                    if ((error == nullptr) && (message != nullptr))
-                    {
-                      this->forceCallback(*message.get());
-                    }
-                  });
+                                 [&](std::shared_ptr<CommandError> error, std::shared_ptr<Message> message) {
+                                   if ((error == nullptr) && (message != nullptr))
+                                   {
+                                     this->forceCallback(*message.get());
+                                   }
+                                 });
   this->activateAutoUpdates((unsigned char)WellKnownMessageId::FORCE_VALUES, interval_ms + 4);
   this->subscriptions.push_back(subscription);
   std::this_thread::sleep_for(timespan);
 
   ROS_INFO("Request updates for speed values");
   subscription = this->subscribe((unsigned char)WellKnownMessageId::SPEED_VALUES,
-                  [&](std::shared_ptr<CommandError> error, std::shared_ptr<Message> message) {
-                    if ((error == nullptr) && (message != nullptr))
-                    {
-                      this->speedCallback(*message.get());
-                    }
-                  });
+                                 [&](std::shared_ptr<CommandError> error, std::shared_ptr<Message> message) {
+                                   if ((error == nullptr) && (message != nullptr))
+                                   {
+                                     this->speedCallback(*message.get());
+                                   }
+                                 });
   this->activateAutoUpdates((unsigned char)WellKnownMessageId::SPEED_VALUES, interval_ms + 6);
   this->subscriptions.push_back(subscription);
 }
@@ -198,7 +195,8 @@ void GripperCommunication::move(float width, float speed, bool stop_on_block, Gr
   this->sendCommand(message, callback, timeout_in_ms);
 }
 
-void GripperCommunication::custom_position(float width, float speed, GripperCallback callback, int timeout_in_ms) {
+void GripperCommunication::custom_position(float width, float speed, GripperCallback callback, int timeout_in_ms)
+{
   ROS_INFO("[GripperCommunication::custom_position] w %f, s %f", width, speed);
 
   unsigned char payload_length = 9;
@@ -213,7 +211,6 @@ void GripperCommunication::custom_position(float width, float speed, GripperCall
   Message message((unsigned char)WellKnownMessageId::CUSTOM_POSITION, payload_length, payload);
 
   this->sendCommand(message, callback, timeout_in_ms);
-
 }
 
 void GripperCommunication::requestValueUpdate(const unsigned char messageId, GripperCallback callback)
@@ -273,7 +270,9 @@ void GripperCommunication::sendCommandSynchronous(Message& message, GripperCallb
   this->awaitUpdateForMessage(message.id, callback, 1, timeout_in_ms);
 }
 
-void GripperCommunication::awaitUpdateForMessage(unsigned char messageId, GripperCallback callback, uint32_t amount, int timeout_in_ms) {
+void GripperCommunication::awaitUpdateForMessage(unsigned char messageId, GripperCallback callback, uint32_t amount,
+                                                 int timeout_in_ms)
+{
   Message received;
   auto start_time = ros::Time::now().toSec();
   bool received_response = false;
@@ -378,7 +377,7 @@ void GripperCommunication::checkPositionUpdateTimeout(Message& message)
 {
   if (message.id == (unsigned char)WellKnownMessageId::OPENING_VALUES)
   {
-      this->last_received_position_update = ros::Time::now();
+    this->last_received_position_update = ros::Time::now();
   }
   else if (message.id == (unsigned char)WellKnownMessageId::HOMING)
   {
@@ -394,13 +393,15 @@ void GripperCommunication::checkPositionUpdateTimeout(Message& message)
     }
   }
 
-
   double time_diff = (ros::Time::now().toSec() - this->last_received_position_update.toSec()) * 1000;
-  if ((time_diff > this->position_update_interval_ms) && this->gripper_state.grasping_state != wsg_50_common::Status::POSITIONING)
+  if ((time_diff > this->position_update_interval_ms) &&
+      this->gripper_state.grasping_state != wsg_50_common::Status::POSITIONING)
   {
     if (this->print_position_update_timeout)
     {
-      ROS_ERROR("Did not receive opening values from gripper within %f ms. This often occurs, when the gripper is not homed.\n", time_diff);
+      ROS_ERROR("Did not receive opening values from gripper within %f ms. This often occurs, when the gripper is not "
+                "homed.\n",
+                time_diff);
       this->print_position_update_timeout = false;
     }
     this->gripper_state.homed = false;
@@ -523,7 +524,9 @@ void GripperCommunication::graspingStateCallback(Message& message)
     {
       this->last_received_update = ros::Time::now();
       this->gripper_state.grasping_state = message.data[2];
-      if (this->is_gripper_error_state_overwritten && this->gripper_state.grasping_state == wsg_50_common::Status::ERROR) {
+      if (this->is_gripper_error_state_overwritten &&
+          this->gripper_state.grasping_state == wsg_50_common::Status::ERROR)
+      {
         this->gripper_state.grasping_state = this->alternative_gripper_error_state;
       }
     }
@@ -695,8 +698,8 @@ void GripperCommunication::set_acceleration(float acceleration)
   this->requestConfiguredAcceleration();
 }
 
-
-void GripperCommunication::setOverrideForGripperErrorState(bool active, int32_t alternative_state) {
+void GripperCommunication::setOverrideForGripperErrorState(bool active, int32_t alternative_state)
+{
   this->is_gripper_error_state_overwritten = active;
   this->alternative_gripper_error_state = alternative_state;
 }

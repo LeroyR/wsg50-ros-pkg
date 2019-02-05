@@ -6,8 +6,8 @@
 HANDLE h;
 
 TPCANMsg msg;
-//TPCANRdMsg *tpcmsg;
+// TPCANRdMsg *tpcmsg;
 unsigned short crc;
-unsigned char header[6]; 
+unsigned char header[6];
 unsigned char data[1];
 char can_id = 0x01;

@@ -6,16 +6,16 @@
  *  @section interface.c_general General file information
  *
  *  @brief
- *  
+ *
  *
  *  @author wolfer
  *  @date	07.07.2011
- *  
- *  
+ *
+ *
  *  @section interface.c_copyright Copyright
- *  
+ *
  *  Copyright 2011 Weiss Robotics, D-71636 Ludwigsburg, Germany
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *
@@ -24,7 +24,7 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the and Weiss Robotics GmbH nor the names of its 
+ *     * Neither the name of the and Weiss Robotics GmbH nor the names of its
  *       contributors may be used to endorse or promote products derived from
  *	 this software without specific prior written permission.
  *
@@ -43,7 +43,6 @@
  */
 //======================================================================
 
-
 //------------------------------------------------------------------------
 // Includes
 //------------------------------------------------------------------------
@@ -59,16 +58,13 @@
 #include "wsg_50/udp.h"
 #include "wsg_50/serial.h"
 
-
 //------------------------------------------------------------------------
 // Macros
 //------------------------------------------------------------------------
 
-
 //------------------------------------------------------------------------
 // Typedefs, enums, structs
 //------------------------------------------------------------------------
-
 
 //------------------------------------------------------------------------
 // Global variables
@@ -80,24 +76,15 @@ extern const interface_t udp;
 extern const interface_t serial;
 
 // Collection of interfaces, NULL terminated
-static const interface_t *interfaces[] =
-{
-	&tcp,
-	&udp,
-	&serial,
-	NULL
-};
-
+static const interface_t* interfaces[] = { &tcp, &udp, &serial, NULL };
 
 //------------------------------------------------------------------------
 // Local function prototypes
 //------------------------------------------------------------------------
 
-
 //------------------------------------------------------------------------
 // Unit Testing
 //------------------------------------------------------------------------
-
 
 //------------------------------------------------------------------------
 // Function implementation
@@ -111,19 +98,19 @@ static const interface_t *interfaces[] =
  * @return Pointer to interface struct
  */
 
-const interface_t * interface_get( const char *name )
+const interface_t* interface_get(const char* name)
 {
-	unsigned int i = 0;
+  unsigned int i = 0;
 
-	while ( interfaces[i] != NULL )
-	{
-		if ( strcmp( name, interfaces[i]->name ) == 0 ) return interfaces[i];
-		i++;
-	}
+  while (interfaces[i] != NULL)
+  {
+    if (strcmp(name, interfaces[i]->name) == 0)
+      return interfaces[i];
+    i++;
+  }
 
-	return NULL;
+  return NULL;
 }
-
 
 //------------------------------------------------------------------------
 // Test implementation

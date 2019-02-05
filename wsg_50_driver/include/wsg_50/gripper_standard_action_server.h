@@ -24,7 +24,7 @@ class GripperStandardActionServer
 {
 public:
   GripperStandardActionServer(ros::NodeHandle& node_handle, std::string base_name, GripperCommunication& gripper_com,
-                      NodeState& node_state, float speed);
+                              NodeState& node_state, float speed);
   void start();
   void shutdown();
   void doWork();
