@@ -105,7 +105,7 @@ int homing( void )
 	unsigned int resp_len;
 
 	// Set flags: Homing direction (0: default, 1: widthitive movement, 2: negative movement).
-	payload[0] = 0x00;
+	payload[0] = 0x02;
 
 	// Submit command and wait for response. Push result to stack.
 	res = cmd_submit( 0x20, payload, 1, true, &resp, &resp_len );
@@ -137,6 +137,8 @@ int homing( void )
  */
 int move( float width, float speed, bool stop_on_block, bool ignore_response)
 {
+	ROS_ERROR_STREAM("move");
+	return script_position_control();
 
 	status_t status;
 	int res;
@@ -187,6 +189,7 @@ int move( float width, float speed, bool stop_on_block, bool ignore_response)
 
 int stop( bool ignore_response )
 {
+	
 	status_t status;
 	int res;
 	unsigned char payload[1];
@@ -311,6 +314,44 @@ int release( float width, float speed )
 
 	// Submit command and wait for response. Push result to stack.
 	res = cmd_submit( 0x26, payload, 8, true, &resp, &resp_len );
+	if ( res != 2 )
+	{
+		dbgPrint( "Response payload length doesn't match (is %d, expected 2)\n", res );
+		if ( res > 0 ) free( resp );
+		return -1;
+	}
+
+	// Check response status
+	status = cmd_get_response_status( resp );
+	free( resp );
+	if ( status != E_SUCCESS )
+	{
+		dbgPrint( "Command RELEASE not successful: %s\n", status_to_str( status ) );
+		return -1;
+	}
+
+	return 0;
+}
+
+int script_position_control() {
+	status_t status;
+	int res;
+	unsigned char payload[9];
+	unsigned char *resp;
+	unsigned int resp_len;
+
+	// Custom payload format:
+	// 0:	Unused
+	// 1:	float, target width, used for 0xB1 command
+	// 5:	float, target speed, used for 0xB1 and 0xB2 command
+	payload[0] = 0x00;
+	//memcpy(&payload[1], &cmd_width, sizeof(float));
+	//memcpy(&payload[5], &cmd_speed, sizeof(float));
+
+	// Copy part width and speed
+
+	// Submit command and wait for response. Push result to stack.
+	res = cmd_submit( 0xB1, payload, 9, true, &resp, &resp_len );
 	if ( res != 2 )
 	{
 		dbgPrint( "Response payload length doesn't match (is %d, expected 2)\n", res );

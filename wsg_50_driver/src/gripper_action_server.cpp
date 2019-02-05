@@ -176,10 +176,16 @@ void GripperActionServer::handleCommand(wsg_50_common::Command command, GoalHand
         if (!command.stop_on_block) {
           this->gripper_com.setOverrideForGripperErrorState(true);
         }
-        this->gripper_com.move(command.width, command.speed, command.stop_on_block,
+        //this->gripper_com.move(command.width, command.speed, command.stop_on_block,
+        //                       [&](std::shared_ptr<CommandError> error, std::shared_ptr<Message> message) {
+        //                         this->commandCallback(error, message);
+        //                       });
+        this->gripper_com.custom_position(command.width, command.speed,
                                [&](std::shared_ptr<CommandError> error, std::shared_ptr<Message> message) {
                                  this->commandCallback(error, message);
                                });
+
+
       }
       catch (std::runtime_error& ex)
       {

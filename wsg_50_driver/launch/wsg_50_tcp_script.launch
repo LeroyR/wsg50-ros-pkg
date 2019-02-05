@@ -6,12 +6,13 @@
   <remap from="/joint_states" to="/joint_states_gripper" if="$(arg remap)"/>
 
   <node  name="wsg_50_driver"  pkg="wsg_50_driver" type="wsg_50_ip" output="screen">
-	<param name="ip" type="string" value="192.168.20.2"/>
+	<param name="ip" type="string" value="192.168.1.20"/>
 	<param name="port" type="int" value="1000"/>
     <param name="protocol" type="string" value="tcp"/>
     <param name="com_mode" type="string" value="$(arg com_mode)"/>
-    <param name="rate" type="double" value="50"/> <!-- WSG50 HW revision 2: up to 30 Hz with script; 140Hz with auto_update -->
+    <param name="rate" type="double" value="20"/> <!-- WSG50 HW revision 2: up to 30 Hz with script; 140Hz with auto_update -->
     <param name="grasping_force" type="double" value="$(arg force)"/>
+    <rosparam command="load" file="$(find wsg_50_driver)/launch/grippercontroller.yaml" />
   </node>
 
 </launch>

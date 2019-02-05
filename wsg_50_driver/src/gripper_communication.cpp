@@ -198,6 +198,24 @@ void GripperCommunication::move(float width, float speed, bool stop_on_block, Gr
   this->sendCommand(message, callback, timeout_in_ms);
 }
 
+void GripperCommunication::custom_position(float width, float speed, GripperCallback callback, int timeout_in_ms) {
+  ROS_INFO("[GripperCommunication::custom_position] w %f, s %f", width, speed);
+
+  unsigned char payload_length = 9;
+  unsigned char payload[payload_length];
+
+  // Set flags: Absolute movement (bit 0 is 0), stop on block (bit 1 is 1).
+  payload[0] = 0x00;
+
+  // Copy target width and speed
+  memcpy(&payload[1], &width, sizeof(float));
+  memcpy(&payload[5], &speed, sizeof(float));
+  Message message((unsigned char)WellKnownMessageId::CUSTOM_POSITION, payload_length, payload);
+
+  this->sendCommand(message, callback, timeout_in_ms);
+
+}
+
 void GripperCommunication::requestValueUpdate(const unsigned char messageId, GripperCallback callback)
 {
   auto message = Message(messageId, 0, nullptr);

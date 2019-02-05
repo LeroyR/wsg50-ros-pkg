@@ -157,10 +157,14 @@ void GripperStandardActionServer::handleCommand(control_msgs::GripperCommand com
   this->gripper_com.setOverrideForGripperErrorState(true);
   try
   {
-    this->gripper_com.move(command.position, this->speed, this->stop_on_block,
-                            [&](std::shared_ptr<CommandError> error, std::shared_ptr<Message> message) {
+    //this->gripper_com.move(command.position, this->speed, this->stop_on_block,  [&](std::shared_ptr<CommandError> error, std::shared_ptr<Message> message) {
+    // this->commandCallback(error, message);
+    // });
+
+    this->gripper_com.custom_position(command.position, this->speed,  [&](std::shared_ptr<CommandError> error, std::shared_ptr<Message> message) {
      this->commandCallback(error, message);
      });
+     
   }
   catch (std::runtime_error& ex)
   {

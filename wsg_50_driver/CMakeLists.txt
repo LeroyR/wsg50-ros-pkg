@@ -9,8 +9,6 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   std_srvs
   wsg_50_common
-  xamla_sysmon_watch
-  xamla_sysmon_msgs
   actionlib
 )
 

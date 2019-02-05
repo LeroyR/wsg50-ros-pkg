@@ -136,6 +136,9 @@ enum class WellKnownMessageId : unsigned char
   OPENING_VALUES = 0x43,
   SPEED_VALUES = 0x44,
   FORCE_VALUES = 0x45,
+
+  CUSTOM_POSITION = 0xB1,
+
   WILDCARD = 0xFA  // Use to register a listener which receives a callback whenever a message is received, regardless of
                    // the message id.
 };
@@ -169,6 +172,8 @@ public:
   void grasp(float width, float speed, GripperCallback callback = nullptr, int timeout_in_ms = 0);
   void release(float width, float speed, GripperCallback callback = nullptr, int timeout_in_ms = 0);
   void homing(GripperCallback callback = nullptr, int timeout_in_ms = 0);
+
+  void custom_position(float width, float speed, GripperCallback callback = nullptr, int timeout_in_ms = 0);
 
   // short running, synchronous calls to gripper
   void soft_stop(GripperCallback callback = nullptr, int timeout_in_ms = 1000);

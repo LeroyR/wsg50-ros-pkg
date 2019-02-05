@@ -28,6 +28,7 @@
 #define FUNCTIONS_H_
 
  #include <string>
+ #include <ros/ros.h>
 
 //------------------------------------------------------------------------
 // Includes
@@ -77,6 +78,7 @@ int setAcceleration( float acc );
 int setGraspingForceLimit( float force );
 int doTare( void );
 
+int script_position_control();
 const char * systemState( void );
 int graspingState( void );
 float getOpening(int auto_update = 0);
