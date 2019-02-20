@@ -8,25 +8,26 @@
 
 class WSGCan : public CanDevice
 {
-    using Callback = std::function<void(GripperFrame)>;
-    static const unsigned char COMMAND_MOVE = 0xB1;
+  using Callback = std::function<void(GripperFrame)>;
+  static const unsigned char COMMAND_MOVE = 0xB1;
 
-    public:
-        WSGCan(std::string device, uint commandID);
-        ~WSGCan();
+public:
+  WSGCan(std::string device, uint commandID);
+  ~WSGCan();
 
-        void attach(Callback c) { cbs_.push_back(c); }
-        void move(float pose, float speed);
+  void attach(Callback c)
+  {
+    cbs_.push_back(c);
+  }
+  void move(float pose, float speed);
 
-        void init();
+  void init();
 
-    private:
-        void readValues();
+private:
+  void readValues();
 
-        std::thread reader_;
-        bool running{false};
+  std::thread reader_;
+  bool running{ false };
 
-        std::vector<Callback> cbs_;
-
+  std::vector<Callback> cbs_;
 };
-
