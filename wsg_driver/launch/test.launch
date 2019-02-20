@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+
+  <node  name="test"  pkg="wsg_driver" type="testnode">
+	  <param name="a" type="string" value="a"/>
+  </node>
+
+</launch>
+
